@@ -188,7 +188,6 @@ class core_search_renderer extends plugin_renderer_base {
             $content .= $this->output->box_start();
             $content .= 'Global Search has been disabled';
             $content .= $this->output->box_end();
-            $content .= $this->output->footer();
             return $content;
         }
 

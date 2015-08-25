@@ -24,6 +24,8 @@
 
 defined('MOODLE_INTERNAL') || die();
 
+require_once($CFG->dirroot.'/group/lib.php');
+
 /**
  * ENROL_META_CREATE_GROUP constant for automatically creating a group for a meta course.
  */
@@ -462,4 +464,26 @@ class enrol_meta_plugin extends enrol_plugin {
         return;
     }
 
+}
+
+/**
+ * Prevent removal of enrol roles.
+ * @param int $itemid
+ * @param int $groupid
+ * @param int $userid
+ * @return bool
+ */
+function enrol_meta_allow_group_member_remove($itemid, $groupid, $userid) {
+    return false;
+}
+
+/**
+ * Prevent removal of groups.
+ * @param int $itemid  The id of the enrol instance.
+ * @param int $groupid The id of the group the is checked for deletion.
+ * @param int $userid  The id of the user trying to delete the gorup.
+ * @return bool
+ */
+function enrol_meta_allow_group_delete($itemid, $groupid, $userid) {
+    return false;
 }

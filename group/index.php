@@ -175,6 +175,7 @@ echo $OUTPUT->heading(format_string($course->shortname, true, array('context' =>
 $groups = groups_get_all_groups($courseid);
 $selectedname = null;
 $preventgroupremoval = array();
+$preventgroupedit = array();
 
 // Get list of groups to render.
 $groupoptions = array();
@@ -199,6 +200,15 @@ if ($groups) {
             'selected' => $selected,
             'text' => $groupname
         ];
+        echo "<option value=\"{$group->id}\"$select title=\"$groupname\">$groupname</option>\n";
+        if ($group->component) {
+            $preventgroupremoval[$group->id] = true;
+            $preventgroupedit[$group->id] = true;
+
+            echo html_writer::tag('option',
+                                  get_string('addedby', 'group', get_string('pluginname', $group->component)),
+                                  array('disabled' => 'disabled', 'class' => 'userselector-infobelow'));
+        }
     }
 }
 
@@ -241,7 +251,7 @@ if ($singlegroup) {
 $disableaddedit = !$singlegroup;
 $disabledelete = !empty($groupids);
 $renderable = new \core_group\output\index_page($courseid, $groupoptions, $selectedname, $members, $disableaddedit, $disabledelete,
-        $preventgroupremoval);
+        $preventgroupremoval, $preventgroupedit);
 $output = $PAGE->get_renderer('core_group');
 echo $output->render($renderable);
 

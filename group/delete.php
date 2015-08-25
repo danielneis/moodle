@@ -59,7 +59,7 @@ foreach($groupidarray as $groupid) {
     $groupnames[] = format_string($group->name);
 }
 
-$returnurl='index.php?id='.$course->id;
+$returnurl = new moodle_url('/group/index.php', array('id' => $course->id));
 
 if(count($groupidarray)==0) {
     print_error('errorselectsome','group',$returnurl);
@@ -71,7 +71,12 @@ if ($confirm && data_submitted()) {
     }
 
     foreach($groupidarray as $groupid) {
-        groups_delete_group($groupid);
+        if (!groups_delete_group_allowed($groupid, $USER->id)) {
+            print_error('errorremovegroupnotpermitted', 'group', $returnurl, $group->name);
+        }
+        if (!groups_delete_group($groupid)) {
+            print_error('errorremovegroup', 'group', $returnurl, $DB->get_field('groups', 'name', array('id' => $groupid)));
+        }
     }
 
     redirect($returnurl);

@@ -140,6 +140,7 @@
         });
         M.core_group.init_index(Y, "{{wwwroot}}", {{courseid}});
         var undeletableGroups = JSON.parse('{{{undeletablegroups}}}');
-        M.core_group.groupslist(Y, undeletableGroups);
+        var uneditableGroups = JSON.parse('{{{uneditablegroups}}}');
+        M.core_group.groupslist(Y, undeletableGroups, uneditableGroups);
     });
 {{/js}}

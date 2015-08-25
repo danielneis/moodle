@@ -497,6 +497,17 @@ function enrol_cohort_allow_group_member_remove($itemid, $groupid, $userid) {
 }
 
 /**
+ * Prevent removal of groups.
+ * @param int $itemid  The id of the enrol instance.
+ * @param int $groupid The id of the group the is checked for deletion.
+ * @param int $userid  The id of the user trying to delete the gorup.
+ * @return bool
+ */
+function enrol_cohort_allow_group_delete($itemid, $groupid, $userid) {
+    return false;
+}
+
+/**
  * Create a new group with the cohorts name.
  *
  * @param int $courseid
@@ -524,7 +535,32 @@ function enrol_cohort_create_new_group($courseid, $cohortid) {
     $groupdata = new stdClass();
     $groupdata->courseid = $courseid;
     $groupdata->name = $groupname;
-    $groupid = groups_create_group($groupdata);
+    $groupid = groups_create_group($groupdata, false, false, 'enrol_cohort', 0);
 
     return $groupid;
+}
+
+/**
+ * Sets itemid = instanceid for groupid.
+ *
+ * @param int $groupid    The id of the group to update.
+ * @param int $instanceid The id of the enrol instance to update the groups table with.
+ * @return bool           True if success, false if groupid or instanceid not found or not passed.
+ */
+function enrol_cohort_update_group_itemid($groupid, $instanceid) {
+    global $DB;
+    if (!$groupid) {
+        return false;
+    }
+    if (!$group = $DB->get_record('groups', array('id' => $groupid))) {
+        return false;
+    }
+    if (!$instanceid) {
+        return false;
+    }
+    if (!$DB->record_exists('enrol', array('id' => $instanceid))) {
+        return false;
+    }
+    $group->itemid = $instanceid;
+    return $DB->update_record('groups', $group);
 }

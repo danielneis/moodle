@@ -59,6 +59,9 @@ class index_page implements renderable, templatable {
     /** @var array Groups that can't be deleted by the user. */
     public $undeletablegroups;
 
+    /** @var array Groups that can't be edited by the user. */
+    public $uneditablegroups;
+
     /**
      * index_page constructor.
      *
@@ -69,9 +72,10 @@ class index_page implements renderable, templatable {
      * @param bool $disableaddedit Whether to disable the add members/edit group buttons.
      * @param bool $disabledelete Whether to disable the delete group button.
      * @param array $undeletablegroups Groups that can't be deleted by the user.
+     * @param array $uneditablegroups Groups that can't be edited by the user.
      */
     public function __construct($courseid, $groups, $selectedgroupname, $selectedgroupmembers, $disableaddedit, $disabledelete,
-                                $undeletablegroups) {
+                                $undeletablegroups, $uneditablegroups) {
         $this->courseid = $courseid;
         $this->groups = $groups;
         $this->selectedgroupname = $selectedgroupname;
@@ -79,6 +83,7 @@ class index_page implements renderable, templatable {
         $this->disableaddedit = $disableaddedit;
         $this->disabledelete = $disabledelete;
         $this->undeletablegroups = $undeletablegroups;
+        $this->uneditablegroups = $uneditablegroups;
     }
 
     /**
@@ -97,6 +102,9 @@ class index_page implements renderable, templatable {
         $data->wwwroot = $CFG->wwwroot;
         // To be passed to the JS init script in the template. Encode as a JSON string.
         $data->undeletablegroups = json_encode($this->undeletablegroups);
+
+        // To be passed to the JS init script in the template. Encode as a JSON string.
+        $data->uneditablegroups = json_encode($this->uneditablegroups);
 
         // Some buttons are enabled if single group selected.
         $data->addmembersdisabled = $this->disableaddedit;

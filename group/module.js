@@ -42,12 +42,14 @@ M.core_group.init_index = function(Y, wwwroot, courseid) {
     M.core_group.membersCombo = new UpdatableMembersCombo(wwwroot, courseid);
 };
 
-M.core_group.groupslist = function(Y, preventgroupremoval) {
+M.core_group.groupslist = function(Y, preventgroupremoval, preventgroupedit) {
     var actions = {
         init : function() {
             // We need to add check_deletable both on change for the groups, and then call it the first time the page loads
             Y.one('#groups').on('change', this.check_deletable, this);
+            Y.one('#groups').on('change', this.checkEditable, this);
             this.check_deletable();
+            this.checkEditable();
         },
         check_deletable : function() {
             // Ensure that if the 'preventremoval' attribute is set, the delete button is greyed out
@@ -63,6 +65,25 @@ M.core_group.groupslist = function(Y, preventgroupremoval) {
             }, this);
             var deletebutton = Y.one('#deletegroup');
             if (candelete && optionselected) {
+                deletebutton.removeAttribute('disabled');
+            } else {
+                deletebutton.setAttribute('disabled', 'disabled');
+            }
+        },
+        checkEditable: function() {
+            // Ensure that if the 'preventremoval' attribute is set, the delete button is greyed out
+            var canedit = true;
+            var optionselected = false;
+            Y.one('#groups').get('options').each(function(option) {
+                if (option.get('selected')) {
+                    optionselected = true;
+                    if (option.getAttribute('value') in preventgroupedit) {
+                        canedit = false;
+                    }
+                }
+            }, this);
+            var deletebutton = Y.one('#showeditgroupsettingsform');
+            if (canedit && optionselected) {
                 deletebutton.removeAttribute('disabled');
             } else {
                 deletebutton.setAttribute('disabled', 'disabled');

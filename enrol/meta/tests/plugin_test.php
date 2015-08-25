@@ -728,6 +728,8 @@ class enrol_meta_plugin_testcase extends advanced_testcase {
         $this->assertEquals('Mathematics course', $group->name);
         // Group course id should match the course id.
         $this->assertEquals($metacourse->id, $group->courseid);
+        // The component should match enrol_meta.
+        $this->assertEquals('enrol_meta', $group->component);
 
         // Create a group that will have the same name as the course.
         $groupdata = new stdClass();
@@ -1064,5 +1066,36 @@ class enrol_meta_plugin_testcase extends advanced_testcase {
         $errors = $metaplugin->edit_instance_validation($data, [], $instance, $coursecontext);
         $this->assertArrayNotHasKey('customint1', $errors);
         $this->assertArrayNotHasKey('customint2', $errors);
+    }
+
+    /*
+     * Test that the itemid of a group is updated with the enrol id.
+     */
+    public function test_enrol_meta_update_group_itemid() {
+        global $DB;
+        $this->resetAfterTest();
+        // Create a category.
+        $category = $this->getDataGenerator()->create_category();
+        // Create two courses.
+        $course = $this->getDataGenerator()->create_course(array('category' => $category->id));
+        $course2 = $this->getDataGenerator()->create_course(array('category' => $category->id));
+        // Create the group.
+        $groupid = enrol_meta_create_new_group($course->id, $course2->id);
+        $enrol = enrol_get_plugin('meta');
+        $eid = $enrol->add_instance($course, array('customint1' => $course2->id, 'customint2' => $groupid));
+        // Run the function.
+        enrol_meta_update_group_itemid($groupid, $eid);
+        $groupinfo = $DB->get_record('groups', array('id' => $groupid));
+        $this->assertEquals($eid, $groupinfo->itemid);
+
+        $eid2 = $enrol->add_instance($course, array('customint1' => $course2->id, 'customint2' => $groupid));
+        // Should not update if courseid == null.
+        $groupupdate = enrol_meta_update_group_itemid(null, $eid2);
+        $groupinfo = $DB->get_record('groups', array('id' => $groupid));
+        $this->assertEquals($eid, $groupinfo->itemid);
+
+        // Should not update if enrolid == null.
+        $groupupdate = enrol_meta_update_group_itemid($groupid, null);
+        $this->assertEquals($eid, $groupinfo->itemid);
     }
 }

@@ -463,3 +463,26 @@ class enrol_meta_plugin extends enrol_plugin {
     }
 
 }
+
+/**
+ * Prevent removal of enrol roles.
+ *
+ * @param int $itemid  The itemid that was stored in the group_members entry.
+ * @param int $groupid The id of the group that is being checked for deletion.
+ * @param int $userid  The id of the user being removed from group.
+ * @return bool Always false.
+ */
+function enrol_meta_allow_group_member_remove($itemid, $groupid, $userid) {
+    return false;
+}
+
+/**
+ * Prevent removal of groups.
+ *
+ * @param int $itemid  The id of the enrol instance.
+ * @param int $groupid The id of the group that is being checked for deletion.
+ * @return bool Always false.
+ */
+function enrol_meta_allow_group_delete($itemid, $groupid) {
+    return false;
+}

@@ -14,7 +14,6 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-
 /**
  * Extra library for groups and groupings.
  *
@@ -145,7 +144,7 @@ function groups_add_member($grouporid, $userorid, $component=null, $itemid=0) {
  * @param mixed $userorid The user id or user object
  * @return bool True if permitted, false otherwise
  */
-function groups_remove_member_allowed($grouporid, $userorid) {
+function groups_remove_member_allowed($grouporid, $userorid = null) {
     global $DB;
 
     if (is_object($userorid)) {
@@ -159,23 +158,31 @@ function groups_remove_member_allowed($grouporid, $userorid) {
         $groupid = $grouporid;
     }
 
-    // Get entry
-    if (!($entry = $DB->get_record('groups_members',
-            array('groupid' => $groupid, 'userid' => $userid), '*', IGNORE_MISSING))) {
-        // If the entry does not exist, they are allowed to remove it (this
-        // is consistent with groups_remove_member below).
-        return true;
-    }
 
-    // If the entry does not have a component value, they can remove it
+    // Get entry
+    if ($userid) {
+        $params = ['groupid' => $groupid, 'userid' => $userid];
+        if (!$entry = $DB->get_record('groups_members', $params, '*', IGNORE_MISSING)) {
+            // If the entry does not exist, they are allowed to remove it (this
+            // is consistent with groups_remove_member below).
+            return true;
+        }
+        $callbackparams = [$entry->itemid, $entry->groupid, $entry->userid];
+    } else {
+        $params = ['id' => $groupid];
+        if ($entry = $DB->get_record('groups', $params, '*', IGNORE_MISSING)) {
+            $callbackparams = [$entry->itemid, $entry->id, null];
+        } else {
+            return true; // Group does not exist, maybe already deleted.
+        }
+    }
+    // If the entry does not have a component value, they can remove it.
     if (empty($entry->component)) {
         return true;
     }
 
-    // It has a component value, so we need to call a plugin function (if it
-    // exists); the default is to allow removal
-    return component_callback($entry->component, 'allow_group_member_remove',
-            array($entry->itemid, $entry->groupid, $entry->userid), true);
+    return component_callback($entry->component, 'allow_group_member_remove', $callbackparams, true);
+
 }
 
 /**
@@ -241,9 +248,11 @@ function groups_remove_member($grouporid, $userorid) {
  * @param stdClass $data group properties
  * @param stdClass $editform
  * @param array $editoroptions
+ * @param string $component Optional component name e.g. 'enrol_imsenterprise',
+ * @param int $itemid Optional itemid associated with component.
  * @return id of group or false if error
  */
-function groups_create_group($data, $editform = false, $editoroptions = false) {
+function groups_create_group($data, $editform = false, $editoroptions = false, $component = null, $itemid = 0) {
     global $CFG, $DB, $USER;
 
     //check that courseid exists
@@ -258,6 +267,24 @@ function groups_create_group($data, $editform = false, $editoroptions = false) {
         if (groups_get_group_by_idnumber($course->id, $data->idnumber)) {
             throw new moodle_exception('idnumbertaken');
         }
+    }
+    $data->component = '';
+    $data->itemid = 0;
+    // Check the component exists if specified.
+    if (!empty($component)) {
+        $dir = core_component::get_component_directory($component);
+        if ($dir && is_dir($dir)) {
+            // Component exists and can be used.
+            $data->component = $component;
+            $data->itemid = $itemid;
+        } else {
+            throw new coding_exception('Invalid call to groups_create_group(). An invalid component was specified');
+        }
+    }
+
+    if ($itemid !== 0 && empty($data->component)) {
+        // An itemid can only be specified if a valid component was found.
+        throw new coding_exception('Invalid call to groups_create_group(). A component must be specified if an itemid is given');
     }
 
     if ($editform and $editoroptions) {
@@ -304,7 +331,11 @@ function groups_create_group($data, $editform = false, $editoroptions = false) {
     // Trigger group event.
     $params = array(
         'context' => $context,
-        'objectid' => $group->id
+        'objectid' => $group->id,
+        'other' => array(
+            'component' => $data->component,
+            'itemid' => $data->itemid
+        )
     );
     $event = \core\event\group_created::create($params);
     $event->add_record_snapshot('groups', $group);
@@ -524,6 +555,42 @@ function groups_update_grouping($data, $editoroptions=null) {
     $event->trigger();
 
     return true;
+}
+
+/**
+ * Checks whether the current user is permitted (using the normal UI) to remove a specific group.
+ *
+ * For automatically-created group member entries, this checks with the
+ * relevant plugin to see whether it is permitted. The default, if the plugin
+ * doesn't provide a function, is true.
+ *
+ * For other entries (and any which have already been deleted/don't exist) it just returns true.
+ *
+ * @param mixed $grouporid The group id or group object.
+ * @return bool True if permitted, false otherwise.
+ */
+function groups_delete_group_allowed($grouporid): bool {
+    global $DB;
+
+    if (is_object($grouporid)) {
+        $groupid = $grouporid->id;
+    } else {
+        $groupid = $grouporid;
+    }
+
+    if (!($entry = $DB->get_record('groups', array('id' => $groupid), '*', IGNORE_MISSING))) {
+        // If the entry does not exist, they are allowed to remove it (this
+        // is consistent with groups_remove_member below).
+        return true;
+    }
+
+    // If the entry does not have a component value, they can remove it.
+    if (empty($entry->component)) {
+        return true;
+    }
+
+    // It has a component value, so we need to call a plugin function (if it exists); the default is to allow removal.
+    return component_callback($entry->component, 'allow_group_delete', array($entry->itemid, $entry->id), true);
 }
 
 /**

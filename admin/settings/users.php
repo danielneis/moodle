@@ -96,6 +96,12 @@ if ($hassiteconfig
             new lang_string('visibilitypref', 'core_contentbank'),
             new lang_string('visibilitypref_help', 'core_contentbank'),
             \core_contentbank\content::VISIBILITY_PUBLIC, $choices));
+
+        $choices = [];
+        $choices[\core_user::SORTUSERS_FIRSTNAME] = new lang_string('sortuserbyfirstname');
+        $choices[\core_user::SORTUSERS_LASTNAME] = new lang_string('sortuserbylastname');
+        $temp->add(new admin_setting_configselect('defaultpreference_sortuser', new lang_string('sortuser'),
+            '', \core_user::SORTUSERS_LASTNAME, $choices));
     }
     $ADMIN->add('accounts', $temp);
 

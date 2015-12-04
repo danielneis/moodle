@@ -88,6 +88,11 @@ class core_user {
     /** @var int Indicates that user profile view should be allowed even if Moodle would prevent it */
     const VIEWPROFILE_FORCE_ALLOW = 1;
 
+    /** @var int Indicates that lists of users must be sorted by firstname,lastname */
+    const SORTUSERS_FIRSTNAME = 1;
+    /** @var int Indicates that lists of users must be sorted by lastname,firstname */
+    const SORTUSERS_LASTNAME = 2;
+
     /** @var stdClass keep record of noreply user */
     public static $noreplyuser = false;
 

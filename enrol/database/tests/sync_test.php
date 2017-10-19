@@ -121,6 +121,10 @@ class enrol_database_testcase extends advanced_testcase {
         $table->add_field('userid', XMLDB_TYPE_CHAR, '255', null, null, null);
         $table->add_field('roleid', XMLDB_TYPE_CHAR, '255', null, null, null);
         $table->add_field('otheruser', XMLDB_TYPE_CHAR, '1', null, XMLDB_NOTNULL, null, '0');
+        $table->add_field('groupname', XMLDB_TYPE_CHAR, '255', null, null, null);
+        $table->add_field('groupcode', XMLDB_TYPE_CHAR, '255', null, null, null);
+        $table->add_field('groupdescription', XMLDB_TYPE_CHAR, '255', null, null, null);
+        $table->add_field('groupidnumber', XMLDB_TYPE_CHAR, '255', null, null, null);
         $table->add_key('primary', XMLDB_KEY_PRIMARY, array('id'));
         if ($dbman->table_exists($table)) {
             $dbman->drop_table($table);
@@ -131,6 +135,13 @@ class enrol_database_testcase extends advanced_testcase {
         set_config('remoteuserfield', 'userid', 'enrol_database');
         set_config('remoterolefield', 'roleid', 'enrol_database');
         set_config('remoteotheruserfield', 'otheruser', 'enrol_database');
+
+        // Settings for group synchronisation tests (see MDL-58785).
+        set_config('remotegroupcodefield', 'groupcode', 'enrol_database');
+        set_config('remotegroupnamefield', 'groupname', 'enrol_database');
+        set_config('remotegroupdescriptionfield', 'groupdescription', 'enrol_database');
+        set_config('remotegroupidnumberfield', 'groupidnumber', 'enrol_database');
+        set_config('localgroupingidnumberprefix', 'db_enrol_', 'enrol_database');
 
         $table = new xmldb_table('enrol_database_test_courses');
         $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
@@ -190,6 +201,12 @@ class enrol_database_testcase extends advanced_testcase {
         foreach($instances as $instance) {
             $plugin->delete_instance($instance);
         }
+
+        $groups = $DB->get_records('groups');
+        foreach($groups as $group) {
+            groups_delete_group($group->id);
+        }
+
     }
 
     protected function assertIsEnrolled($userindex, $courseindex, $status=null, $rolename = null) {
@@ -225,6 +242,59 @@ class enrol_database_testcase extends advanced_testcase {
         $this->assertFalse($DB->record_exists('user_enrolments', array('enrolid' => $dbinstance->id, 'userid' => self::$users[$userindex]->id)));
     }
 
+    protected function get_group_id_for_course_index($courseindex, $groupcode) {
+        global $DB;
+
+        $dbinstance = $DB->get_record('groups', array('courseid' => self::$courses[$courseindex]->id, 'enrolmentkey' => $groupcode));
+        $this->assertTrue(is_object($dbinstance));
+        $this->assertObjectHasAttribute('id', $dbinstance);
+        if (!is_object($dbinstance) || !property_exists($dbinstance, 'id')) {
+            return false;
+        }
+        return $dbinstance->id;
+    }
+
+    protected function assert_user_is_in_group($userindex, $courseindex, $groupcode) {
+        global $DB;
+
+        if (!$groupid = $this->get_group_id_for_course_index($courseindex, $groupcode)) {
+            return;
+        }
+        $this->assertTrue(
+                $DB->record_exists('groups_members', array('groupid' => $groupid, 'userid' => self::$users[$userindex]->id)));
+    }
+
+    protected function assert_user_is_not_in_group($userindex, $courseindex, $groupcode) {
+        global $DB;
+
+        if (!$groupid = $this->get_group_id_for_course_index($courseindex, $groupcode)) {
+            return;
+        }
+        $this->assertFalse(
+                $DB->record_exists('groups_members', array('groupid' => $groupid, 'userid' => self::$users[$userindex]->id)));
+    }
+
+    protected function assert_group_is_in_grouping($courseindex, $groupcode) {
+        global $DB;
+
+        $plugin = enrol_get_plugin('database');
+        $groupingidnumber = $plugin->get_config('localgroupingidnumberprefix').self::$courses[$courseindex]->idnumber;
+
+        if (!$groupid = $this->get_group_id_for_course_index($courseindex, $groupcode)) {
+            return;
+        }
+
+        $dbinstance = $DB->get_record(
+                'groupings',
+                array('courseid' => self::$courses[$courseindex]->id, 'idnumber' => $groupingidnumber));
+        $this->assertTrue(is_object($dbinstance));
+        $this->assertObjectHasAttribute('id',$dbinstance);
+        if (!is_object($dbinstance) || !property_exists($dbinstance, 'id')) {
+            return;
+        }
+        $this->assertTrue($DB->record_exists('groupings_groups', array('groupingid' => $dbinstance->id, 'groupid' => $groupid)));
+    }
+
     public function test_sync_user_enrolments() {
         global $DB;
 
@@ -244,7 +314,12 @@ class enrol_database_testcase extends advanced_testcase {
 
         $plugin->set_config('defaultrole', self::$roles['student']->id);
 
-        $DB->insert_record('enrol_database_test_enrols', array('userid' => 'userid1', 'courseid' => 'courseid1', 'roleid' => 'student'));
+        // The group data here will be ignored as this is only used when doing a full sync of all enrolments (see below).
+        $DB->insert_record('enrol_database_test_enrols', array(
+                'userid' => 'userid1', 'courseid' => 'courseid1', 'roleid' => 'student',
+                'groupcode' => 'group1', 'groupname' => 'Group 1', 'groupdescription' => 'Test group 1',
+                'groupidnumber' => 'testgroup1'
+                ));
         $DB->insert_record('enrol_database_test_enrols', array('userid' => 'userid1', 'courseid' => 'courseid2', 'roleid' => 'teacher'));
         $DB->insert_record('enrol_database_test_enrols', array('userid' => 'userid2', 'courseid' => 'courseid1', 'roleid' => null));
         $DB->insert_record('enrol_database_test_enrols', array('userid' => 'userid4', 'courseid' => 'courseid4', 'roleid' => 'editingteacher', 'otheruser' => '1'));
@@ -254,11 +329,17 @@ class enrol_database_testcase extends advanced_testcase {
         $this->assertEquals(0, $DB->count_records('user_enrolments', array()));
         $this->assertEquals(0, $DB->count_records('enrol', array('enrol' => 'database')));
         $this->assertEquals(0, $DB->count_records('role_assignments', array('component' => 'enrol_database')));
+        $this->assertEquals(0, $DB->count_records('groupings', array()));
+        $this->assertEquals(0, $DB->count_records('groups', array()));
+        $this->assertEquals(0, $DB->count_records('groups_members', array()));
 
         $plugin->sync_user_enrolments(self::$users[1]);
         $this->assertEquals(2, $DB->count_records('user_enrolments', array()));
         $this->assertEquals(2, $DB->count_records('enrol', array('enrol' => 'database')));
         $this->assertEquals(2, $DB->count_records('role_assignments', array('component' => 'enrol_database')));
+        $this->assertEquals(0, $DB->count_records('groupings', array()));
+        $this->assertEquals(0, $DB->count_records('groups', array()));
+        $this->assertEquals(0, $DB->count_records('groups_members', array()));
         $this->assertIsEnrolled(1, 1, ENROL_USER_ACTIVE, 'student');
         $this->assertIsEnrolled(1, 2, ENROL_USER_ACTIVE, 'teacher');
 
@@ -426,14 +507,18 @@ class enrol_database_testcase extends advanced_testcase {
 
         $trace = new null_progress_trace();
 
-        // Test basic enrol sync for one user after login.
+        // Test enrol sync for all users.
 
         $this->reset_enrol_database();
         $plugin->set_config('localcoursefield', 'idnumber');
         $plugin->set_config('localuserfield', 'idnumber');
         $plugin->set_config('localrolefield', 'shortname');
 
-        $DB->insert_record('enrol_database_test_enrols', array('userid' => 'userid1', 'courseid' => 'courseid1', 'roleid' => 'student'));
+        $DB->insert_record('enrol_database_test_enrols', array(
+                'userid' => 'userid1', 'courseid' => 'courseid1', 'roleid' => 'student',
+                'groupcode' => 'group1', 'groupname' => 'Group 1', 'groupdescription' => 'Test group 1',
+                'groupidnumber' => 'testgroup1'
+                ));
         $DB->insert_record('enrol_database_test_enrols', array('userid' => 'userid1', 'courseid' => 'courseid2', 'roleid' => 'editingteacher'));
         $DB->insert_record('enrol_database_test_enrols', array('userid' => 'userid2', 'courseid' => 'courseid1', 'roleid' => 'student'));
         $DB->insert_record('enrol_database_test_enrols', array('userid' => 'userid4', 'courseid' => 'courseid4', 'roleid' => 'editingteacher', 'otheruser' => '1'));
@@ -442,29 +527,54 @@ class enrol_database_testcase extends advanced_testcase {
         $this->assertEquals(0, $DB->count_records('user_enrolments', array()));
         $this->assertEquals(0, $DB->count_records('enrol', array('enrol' => 'database')));
         $this->assertEquals(0, $DB->count_records('role_assignments', array('component' => 'enrol_database')));
+        $this->assertEquals(0, $DB->count_records('groupings', array()));
+        $this->assertEquals(0, $DB->count_records('groups', array()));
+        $this->assertEquals(0, $DB->count_records('groups_members', array()));
 
         $plugin->sync_enrolments($trace);
         $this->assertEquals(3, $DB->count_records('user_enrolments', array()));
         $this->assertEquals(3, $DB->count_records('enrol', array('enrol' => 'database')));
         $this->assertEquals(4, $DB->count_records('role_assignments', array('component' => 'enrol_database')));
+        // There will be 3 groupings even though there is only one actual enrolment because groupings are created...
+        // for all courses up front even if the enrolment onto that course subsequently fails.
+        $this->assertEquals(3, $DB->count_records('groupings', array()));
+        $this->assertEquals(1, $DB->count_records('groups', array()));
+        $dbinstance = $DB->get_record('groups', array());
+        $this->assertEquals('Group 1', $dbinstance->name);
+        $this->assertEquals('Test group 1', $dbinstance->description);
+        $this->assertEquals('testgroup1', $dbinstance->idnumber);
+        $this->assertEquals(1, $DB->count_records('groups_members', array()));
         $this->assertIsEnrolled(1, 1, ENROL_USER_ACTIVE, 'student');
         $this->assertIsEnrolled(1, 2, ENROL_USER_ACTIVE, 'editingteacher');
         $this->assertIsEnrolled(2, 1, ENROL_USER_ACTIVE, 'student');
         $this->assertIsNotEnrolled(4, 4);
         $this->assertHasRoleAssignment(4, 4, 'editingteacher');
+        $this->assert_user_is_in_group(1, 1, 'group1' );
+        $this->assert_group_is_in_grouping(1, 'group1');
+        $this->assert_user_is_not_in_group(2, 1, 'group1' );
 
         $plugin->set_config('defaultrole', self::$roles['teacher']->id);
-        $DB->insert_record('enrol_database_test_enrols', array('userid' => 'userid3', 'courseid' => 'courseid3'));
+        $DB->insert_record('enrol_database_test_enrols', array(
+                'userid' => 'userid3', 'courseid' => 'courseid3',
+                'groupcode' => 'group1', 'groupname' => 'Group 1', 'groupdescription' => 'Test group 1',
+                'groupidnumber' => 'testgroup1'
+                ));
         $plugin->sync_enrolments($trace);
         $this->assertEquals(4, $DB->count_records('user_enrolments', array()));
         $this->assertEquals(4, $DB->count_records('enrol', array('enrol' => 'database')));
         $this->assertEquals(5, $DB->count_records('role_assignments', array('component' => 'enrol_database')));
+        $this->assertEquals(4, $DB->count_records('groupings', array()));
+        // There will be two groups now even though the group code is the same - this is because the course is different.
+        $this->assertEquals(2, $DB->count_records('groups', array()));
+        $this->assertEquals(2, $DB->count_records('groups_members', array()));
         $this->assertIsEnrolled(1, 1, ENROL_USER_ACTIVE, 'student');
         $this->assertIsEnrolled(1, 2, ENROL_USER_ACTIVE, 'editingteacher');
         $this->assertIsEnrolled(2, 1, ENROL_USER_ACTIVE, 'student');
         $this->assertIsNotEnrolled(4, 4);
         $this->assertHasRoleAssignment(4, 4, 'editingteacher');
         $this->assertIsEnrolled(3, 3, ENROL_USER_ACTIVE, 'teacher');
+        $this->assert_user_is_in_group(3, 3, 'group1' );
+        $this->assert_group_is_in_grouping(3, 'group1');
 
 
         // Test different unenrolment options.
@@ -475,12 +585,17 @@ class enrol_database_testcase extends advanced_testcase {
         $this->assertEquals(4, $DB->count_records('user_enrolments', array()));
         $this->assertEquals(4, $DB->count_records('enrol', array('enrol' => 'database')));
         $this->assertEquals(5, $DB->count_records('role_assignments', array('component' => 'enrol_database')));
+        $this->assertEquals(4, $DB->count_records('groupings', array()));
+        $this->assertEquals(2, $DB->count_records('groups', array()));
+        $this->assertEquals(1, $DB->count_records('groups_members', array()));
         $this->assertIsEnrolled(1, 1, ENROL_USER_ACTIVE, 'student');
         $this->assertIsEnrolled(1, 2, ENROL_USER_ACTIVE, 'editingteacher');
         $this->assertIsEnrolled(2, 1, ENROL_USER_ACTIVE, 'student');
         $this->assertIsNotEnrolled(4, 4);
         $this->assertHasRoleAssignment(4, 4, 'editingteacher');
         $this->assertIsEnrolled(3, 3, ENROL_USER_ACTIVE, 'teacher');
+        $this->assert_user_is_in_group(3, 3, 'group1' );
+        $this->assert_user_is_not_in_group(1, 1, 'group1' );
 
 
         $plugin->set_config('unenrolaction', ENROL_EXT_REMOVED_SUSPEND);
@@ -500,13 +615,53 @@ class enrol_database_testcase extends advanced_testcase {
         $this->assertEquals(4, $DB->count_records('user_enrolments', array()));
         $this->assertEquals(4, $DB->count_records('enrol', array('enrol' => 'database')));
         $this->assertEquals(5, $DB->count_records('role_assignments', array('component' => 'enrol_database')));
+        $this->assertEquals(4, $DB->count_records('groupings', array()));
+        $this->assertEquals(2, $DB->count_records('groups', array()));
+        $this->assertEquals(1, $DB->count_records('groups_members', array()));
         $this->assertIsEnrolled(1, 1, ENROL_USER_ACTIVE, 'student');
         $this->assertIsEnrolled(1, 2, ENROL_USER_ACTIVE, 'editingteacher');
         $this->assertIsEnrolled(2, 1, ENROL_USER_ACTIVE, 'student');
         $this->assertIsNotEnrolled(4, 4);
         $this->assertHasRoleAssignment(4, 4, 'editingteacher');
         $this->assertIsEnrolled(3, 3, ENROL_USER_ACTIVE, 'teacher');
+        $this->assert_user_is_not_in_group(1, 1, 'group1' );
 
+        // Replace the existing user1 record which doesn't have a grouping with a new one which does and...
+        // make sure that grouping is added.
+        $DB->delete_records('enrol_database_test_enrols',
+                array('userid' => 'userid1', 'courseid' => 'courseid1', 'roleid' => 'student'));
+        $DB->insert_record('enrol_database_test_enrols',
+                array(
+                'userid' => 'userid1', 'courseid' => 'courseid1', 'roleid' => 'student',
+                'groupcode' => 'group1', 'groupname' => 'Group 1', 'groupdescription' => 'Test group 1',
+                'groupidnumber' => 'testgroup1'));
+        $plugin->sync_enrolments($trace);
+        $this->assertIsEnrolled(1, 1, ENROL_USER_ACTIVE, 'student');
+        $this->assertIsEnrolled(1, 2, ENROL_USER_ACTIVE, 'editingteacher');
+        $this->assertIsEnrolled(2, 1, ENROL_USER_ACTIVE, 'student');
+        $this->assertEquals(4, $DB->count_records('groupings', array()));
+        $this->assertEquals(2, $DB->count_records('groups', array()));
+        $this->assertEquals(2, $DB->count_records('groups_members', array()));
+        $this->assert_user_is_in_group(1, 1, 'group1' );
+        $this->assert_user_is_in_group(3, 3, 'group1' );
+        $this->assert_group_is_in_grouping(1, 'group1');
+        $this->assert_group_is_in_grouping(3, 'group1');
+
+        // Replace the existing user1 record which does have a grouping with a new one which doesn't and...
+        //  make sure that grouping is removed.
+        $DB->delete_records('enrol_database_test_enrols',
+                array('userid' => 'userid1', 'courseid' => 'courseid1', 'roleid' => 'student'));
+        $DB->insert_record('enrol_database_test_enrols',
+                array('userid' => 'userid1', 'courseid' => 'courseid1', 'roleid' => 'student'));
+        $plugin->sync_enrolments($trace);
+        $this->assertIsEnrolled(1, 1, ENROL_USER_ACTIVE, 'student');
+        $this->assertIsEnrolled(1, 2, ENROL_USER_ACTIVE, 'editingteacher');
+        $this->assertIsEnrolled(2, 1, ENROL_USER_ACTIVE, 'student');
+        $this->assertEquals(4, $DB->count_records('groupings', array()));
+        $this->assertEquals(2, $DB->count_records('groups', array()));
+        $this->assertEquals(1, $DB->count_records('groups_members', array()));
+        $this->assert_user_is_not_in_group(1, 1, 'group1' );
+        $this->assert_user_is_in_group(3, 3, 'group1' );
 
         $DB->delete_records('enrol_database_test_enrols', array('userid' => 'userid1', 'courseid' => 'courseid1', 'roleid' => 'student'));
         $plugin->set_config('unenrolaction', ENROL_EXT_REMOVED_SUSPENDNOROLES);
@@ -581,6 +736,7 @@ class enrol_database_testcase extends advanced_testcase {
         $this->assertEquals(0, $DB->count_records('user_enrolments', array()));
         $this->assertEquals(0, $DB->count_records('enrol', array('enrol' => 'database')));
         $this->assertEquals(0, $DB->count_records('role_assignments', array('component' => 'enrol_database')));
+        $this->assertEquals(0, $DB->count_records('groups_members', array('component' => 'enrol_database')));
 
         $plugin->set_config('localcoursefield', 'id');
         $plugin->set_config('localuserfield', 'id');
@@ -616,13 +772,16 @@ class enrol_database_testcase extends advanced_testcase {
         $this->assertIsEnrolled(1, 2, ENROL_USER_ACTIVE, 'teacher');
         $this->assertIsEnrolled(2, 1, ENROL_USER_ACTIVE, 'student');
 
-
         $this->reset_enrol_database();
         $plugin->set_config('localcoursefield', 'id');
         $plugin->set_config('localuserfield', 'username');
         $plugin->set_config('localrolefield', 'id');
 
-        $DB->insert_record('enrol_database_test_enrols', array('userid' => self::$users[1]->username, 'courseid' => self::$courses[1]->id, 'roleid' => self::$roles['student']->id));
+        $DB->insert_record('enrol_database_test_enrols', array(
+                'userid' => self::$users[1]->username, 'courseid' => self::$courses[1]->id, 'roleid' => self::$roles['student']->id,
+                'groupcode' => 'group1', 'groupname' => 'Group 1', 'groupdescription' => 'Test group 1',
+                'groupidnumber' => 'testgroup1'
+        ));
         $DB->insert_record('enrol_database_test_enrols', array('userid' => self::$users[1]->username, 'courseid' => self::$courses[2]->id, 'roleid' => self::$roles['teacher']->id));
         $DB->insert_record('enrol_database_test_enrols', array('userid' => self::$users[2]->username, 'courseid' => self::$courses[1]->id, 'roleid' => self::$roles['student']->id));
 
@@ -630,32 +789,60 @@ class enrol_database_testcase extends advanced_testcase {
         $this->assertEquals(3, $DB->count_records('user_enrolments', array()));
         $this->assertEquals(2, $DB->count_records('enrol', array('enrol' => 'database')));
         $this->assertEquals(3, $DB->count_records('role_assignments', array('component' => 'enrol_database')));
+        $this->assertEquals(1, $DB->count_records('groups', array()));
+        $this->assertEquals(1, $DB->count_records('groups_members', array()));
         $this->assertIsEnrolled(1, 1, ENROL_USER_ACTIVE, 'student');
         $this->assertIsEnrolled(1, 2, ENROL_USER_ACTIVE, 'teacher');
         $this->assertIsEnrolled(2, 1, ENROL_USER_ACTIVE, 'student');
+        $this->assert_user_is_in_group(1, 1, 'group1' );
+
+        // Check that group enrolment code removes people from groups properly.
+        $DB->delete_records('enrol_database_test_enrols', array(
+                'userid' => self::$users[1]->username, 'courseid' => self::$courses[1]->id, 'roleid' => self::$roles['student']->id
+        ));
+        $DB->insert_record('enrol_database_test_enrols', array(
+                'userid' => self::$users[1]->username, 'courseid' => self::$courses[1]->id, 'roleid' => self::$roles['student']->id,
+        ));
+        $plugin->sync_enrolments($trace);
+        $this->assertEquals(1, $DB->count_records('groups', array()));
+        $this->assertEquals(0, $DB->count_records('groups_members', array()));
+        // User should still be enrolled - but not in a group any more.
+        $this->assertIsEnrolled(1, 1, ENROL_USER_ACTIVE, 'student');
+        $this->assert_user_is_not_in_group(1, 1, 'group1' );
 
 
         // Test sync of one course only.
 
         $this->reset_enrol_database();
 
-        $DB->insert_record('enrol_database_test_enrols', array('userid' => self::$users[1]->username, 'courseid' => self::$courses[1]->id, 'roleid' => self::$roles['student']->id));
+        $DB->insert_record('enrol_database_test_enrols', array(
+                'userid' => self::$users[1]->username, 'courseid' => self::$courses[1]->id, 'roleid' => self::$roles['student']->id,
+                'groupcode' => 'group1', 'groupname' => 'Group 1', 'groupdescription' => 'Test group 1',
+                'groupidnumber' => 'testgroup1'
+        ));
         $DB->insert_record('enrol_database_test_enrols', array('userid' => self::$users[1]->username, 'courseid' => self::$courses[2]->id, 'roleid' => self::$roles['teacher']->id));
         $DB->insert_record('enrol_database_test_enrols', array('userid' => self::$users[2]->username, 'courseid' => self::$courses[1]->id, 'roleid' => self::$roles['student']->id));
 
         $this->assertEquals(0, $DB->count_records('user_enrolments', array()));
         $this->assertEquals(0, $DB->count_records('enrol', array('enrol' => 'database')));
         $this->assertEquals(0, $DB->count_records('role_assignments', array('component' => 'enrol_database')));
+        $this->assertEquals(0, $DB->count_records('groups', array()));
+        $this->assertEquals(0, $DB->count_records('groups_members', array()));
 
         $plugin->sync_enrolments($trace, self::$courses[3]->id);
         $this->assertEquals(0, $DB->count_records('user_enrolments', array()));
         $this->assertEquals(1, $DB->count_records('enrol', array('enrol' => 'database')));
         $this->assertEquals(0, $DB->count_records('role_assignments', array('component' => 'enrol_database')));
+        $this->assertEquals(0, $DB->count_records('groups', array()));
+        $this->assertEquals(0, $DB->count_records('groups_members', array()));
 
         $plugin->sync_enrolments($trace, self::$courses[1]->id);
         $this->assertEquals(2, $DB->count_records('user_enrolments', array()));
         $this->assertEquals(2, $DB->count_records('enrol', array('enrol' => 'database')));
         $this->assertEquals(2, $DB->count_records('role_assignments', array('component' => 'enrol_database')));
+        $this->assertEquals(1, $DB->count_records('groups', array()));
+        $this->assertEquals(1, $DB->count_records('groups_members', array()));
+        $this->assert_user_is_in_group(1, 1, 'group1' );
         $this->assertIsEnrolled(1, 1, ENROL_USER_ACTIVE, 'student');
         $this->assertIsEnrolled(2, 1, ENROL_USER_ACTIVE, 'student');
 

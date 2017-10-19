@@ -320,6 +320,11 @@ class enrol_database_plugin extends enrol_plugin {
         $userfield        = trim($this->get_config('remoteuserfield'));
         $rolefield        = trim($this->get_config('remoterolefield'));
         $otheruserfield   = trim($this->get_config('remoteotheruserfield'));
+        $groupnamefield   = strtolower($this->get_config('remotegroupnamefield'));
+        $groupdescriptionfield  = strtolower($this->get_config('remotegroupdescriptionfield'));
+        $groupcodefield   = strtolower($this->get_config('remotegroupcodefield'));
+        $groupidnumberfield     = strtolower($this->get_config('remotegroupidnumberfield'));
+        $groupingidnumberprefix  = $this->get_config('localgroupingidnumberprefix');
 
         // Lowercased versions - necessary because we normalise the resultset with array_change_key_case().
         $coursefield_l    = strtolower($coursefield);
@@ -456,7 +461,19 @@ class enrol_database_plugin extends enrol_plugin {
         if ($otheruserfield) {
             $sqlfields[] = $otheruserfield;
         }
-        foreach ($existing as $course) {
+        if ($groupcodefield) {
+            $sqlfields[] = $groupcodefield;
+            if ($groupidnumberfield) {
+                $sqlfields[] = $groupidnumberfield;
+            }
+            if ($groupnamefield) {
+                $sqlfields[] = $groupnamefield;
+            }
+            if ($groupdescriptionfield) {
+                $sqlfields[] = $groupdescriptionfield;
+            }
+        }
+        foreach ($existing as $remoteid => $course) {
             if ($ignorehidden and !$course->visible) {
                 continue;
             }
@@ -491,6 +508,47 @@ class enrol_database_plugin extends enrol_plugin {
                 }
             }
             $rs->close();
+
+            if ($groupcodefield) {
+                $requestedgroups = array();
+                $currentgroups = array();
+
+                require_once("$CFG->dirroot/group/lib.php");
+
+                // Here we make sure there is a grouping for our database groups.
+                $groupingidnumber = $groupingidnumberprefix . $remoteid;
+                $groupingid = $this->get_grouping_id_for_idnumber( $course->id, $groupingidnumber );
+
+                // Is there a regoruping for database enrolment groups?
+                $sql = "SELECT g.id, g.name, g.enrolmentkey
+                  FROM {groups} g
+                    INNER JOIN {groupings_groups} gg ON gg.groupid = g.id AND gg.groupingid = :groupingid
+                  WHERE g.courseid = :courseid";
+                $params = array('courseid' => $course->id, 'groupingid' => $groupingid);
+                $foundgroups = $DB->get_records_sql($sql, $params);
+                $groups = array();
+                foreach ($foundgroups as $group) {
+                    $groups[$group->enrolmentkey] = $group;
+                }
+
+                // Get the current group memberships for this course and grouping.
+                $sql = "SELECT u.id, g.enrolmentkey
+                  FROM {user} u
+                    INNER JOIN {groups_members} gm ON u.id = gm.userid
+                    INNER JOIN {groups} g ON gm.groupid = g.id
+                    INNER JOIN {groupings_groups} gg ON gg.groupid = g.id AND gg.groupingid = :groupingid
+                  WHERE g.courseid = :courseid";
+
+                $params = array('courseid' => $course->id, 'groupingid' => $groupingid);
+                $foundmemberships = $DB->get_records_sql($sql, $params);
+                foreach ($foundmemberships as $userid => $membership) {
+                    $groupenrolmentkey = $membership->enrolmentkey;
+                    if (isset($groups[$groupenrolmentkey])) {
+                        $groupid = $groups[$groupenrolmentkey]->id;
+                        $currentgroups[$userid][$groupid] = $groupid;
+                    }
+                }
+            }
 
             // Get list of users that need to be enrolled and their roles.
             $requestedroles  = array();
@@ -530,6 +588,56 @@ class enrol_database_plugin extends enrol_plugin {
                             $roleid = $roles[$fields[$rolefield_l]];
                         }
 
+
+                        if (!empty($groupcodefield) && !empty($fields[$groupcodefield])) {
+                            $groupenrolmentkey = $fields[$groupcodefield];
+                            if (!isset($groups[$groupenrolmentkey])) {
+                                if ($groupingid) {
+                                    // If they have specified a field to get the group name from and that field isn't empty...
+                                    // ... then use the value from there instead.
+                                    if ($groupnamefield && !empty($fields[$groupnamefield])) {
+                                        $newgroupname = $fields[$groupnamefield];
+                                    } else {
+                                        // Default the new group name to be the group code.
+                                        $newgroupname = $fields[$groupcodefield];
+                                    }
+
+                                    if ($groupdescriptionfield && !empty($fields[$groupdescriptionfield])) {
+                                        $newgroupdescription = $fields[$groupdescriptionfield];
+                                    } else {
+                                        // Use a built in default for the group description.
+                                        $newgroupdescription = get_string('descriptionforautogeneratedgroups', 'enrol_database');
+                                    }
+
+                                    if ($groupidnumberfield && !empty($fields[$groupidnumberfield])) {
+                                        $newgroupidnumber = $fields[$groupidnumberfield];
+                                    } else {
+                                        // Use an empty idumber if no field has been specified for this.
+                                        $newgroupidnumber = '';
+                                    }
+
+                                    // Create the group in the course.
+                                    $newgroup = create_group_in_course(
+                                        $newgroupname,
+                                        $newgroupidnumber,
+                                        $course->id,
+                                        $newgroupdescription,
+                                        $groupenrolmentkey );
+                                    if (!is_object($newgroup)) {
+                                        $trace->output("error: problem creating new group '$newgroupname'", 1);
+                                        continue;
+                                    }
+                                    $group[$groupenrolmentkey] = $newgroup;
+                                    groups_assign_grouping($groupingid, $newgroup->id);
+                                }
+                            }
+
+                            if (isset($groups[$groupenrolmentkey])) {
+                                $groupid = $groups[$groupenrolmentkey]->id;
+                                $requestedgroups[$userid][$groupid] = $groupid;
+                            }
+                        }
+
                         $requestedroles[$userid][$roleid] = $roleid;
                         if (empty($fields[$otheruserfieldlower])) {
                             $requestedenrols[$userid][$roleid] = $roleid;
@@ -559,6 +667,32 @@ class enrol_database_plugin extends enrol_plugin {
                 if ($currentstatus[$userid] == ENROL_USER_SUSPENDED) {
                     $this->update_user_enrol($instance, $userid, ENROL_USER_ACTIVE);
                     $trace->output("unsuspending: $userid ==> $course->shortname", 1);
+                }
+            }
+
+            // Add and remove users from groups as required.
+            // It is important to do this after adding enrolments because groups_add_member will...
+            // ...fail if the user has not already been enrolled onto the course which corresponds to the group.
+            if ($groupcodefield) {
+                foreach ($requestedgroups as $userid => $usergroups) {
+                    // Add user to any any new groups.
+                    foreach ($usergroups as $groupid) {
+                        if (empty($currentgroups[$userid][$groupid])) {
+                            groups_add_member($groupid, $userid, 'enrol_database');
+                            $currentgroups[$userid][$groupid] = $groupid;
+                            $trace->output("adding to group: $userid ==> $groupid", 1);
+                        }
+                    }
+                }
+
+                foreach ($currentgroups as $userid => $usergroups) {
+                    // Remove user from any groups they shouldn't be in anymore.
+                    foreach ($usergroups as $groupid) {
+                        if (empty($requestedgroups[$userid][$groupid])) {
+                            groups_remove_member($groupid, $userid, 'enrol_database');
+                            $trace->output("removing from group: $userid ==> $groupid", 1);
+                        }
+                    }
                 }
             }
 
@@ -822,6 +956,65 @@ class enrol_database_plugin extends enrol_plugin {
         $trace->finished();
 
         return 0;
+    }
+
+    /**
+     * Get the grouping ID for the specified course with the specified idnumber.
+     *
+     * First it checks to see if an existing matching grouping exists and if it does returns the corresponding ID.
+     * If no matching grouping exists it creates one and returns the ID
+     *
+     * @param int $courseid
+     * @param string $idnumber
+     * @return int|false id of grouping or false if error
+     */
+    protected function get_grouping_id_for_idnumber( $courseid, $idnumber ) {
+        global $DB;
+
+        $grouping = groups_get_group_by_idnumber( $courseid, $idnumber );
+        if (!$grouping) {
+
+            // Create the grouping if it doesn't already exist.
+            $data = new stdClass();
+            $data->courseid = $courseid;
+            $data->idnumber = $idnumber;
+            $data->name = get_string('nameforautogeneratedgroupings', 'enrol_database');
+            $data->description = get_string('descriptionforautogeneratedgroupings', 'enrol_database');
+
+            // TODO MDL-51202 groups should belong to this component.
+            return groups_create_grouping($data);
+        } else {
+            return $grouping->id;
+        }
+    }
+
+    /**
+     * Create a new group in the specified course
+     *
+     * Populates a stdClass object with the required fields and sends this off to groups_create_gropIf no matching grouping exists it creates one and returns the ID
+     *
+     * @param string $name name of the new group
+     * @param string $dnumber idnumber for the new group
+     * @param string $courseid id of the existing course which this group is to be created in
+     * @param string $description description of the new group
+     * @param string $enrolmentkey the enrolment key for the new group
+     * @return int|false id of new group or false if error
+     */
+
+    function create_group_in_course( $name, $idnumber, $courseid, $description, $enrolmentkey ) {
+        // Create the group in the course.
+        $data = new stdClass();
+        $data->name = $name;
+        $data->idnumber = $idnumber;
+        $data->courseid = $courseid;
+        $data->description = $description;
+        $data->enrolmentkey = $enrolmentkey;
+
+        // TODO MDL-51202 groups should belong to this component.
+        $newgroupid = groups_create_group($data);
+        if ($$newgroupid) return false;
+        $data->id = $newgroupid;
+        return $data;
     }
 
     protected function db_get_sql($table, array $conditions, array $fields, $distinct = false, $sort = "") {

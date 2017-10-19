@@ -81,6 +81,36 @@ if ($ADMIN->fulltree) {
     $otheruserfieldlabel = get_string('remoteotheruserfield', 'enrol_database');
     $otheruserfielddesc  = get_string('remoteotheruserfield_desc', 'enrol_database');
     $settings->add(new admin_setting_configtext('enrol_database/remoteotheruserfield', $otheruserfieldlabel, $otheruserfielddesc, ''));
+    $groupcodefieldlabel = get_string('remotegroupcodefield', 'enrol_database');
+    $groupcodefielddesc  = get_string('remotegroupcodefield_desc', 'enrol_database');
+    $settings->add(new admin_setting_configtext('enrol_database/remotegroupcodefield',
+                                                $groupcodefieldlabel,
+                                                $groupcodefielddesc,
+                                                ''));
+    $groupnamefieldlabel = get_string('remotegroupnamefield', 'enrol_database');
+    $groupnamefielddesc  = get_string('remotegroupnamefield_desc', 'enrol_database');
+    $settings->add(new admin_setting_configtext('enrol_database/remotegroupnamefield',
+                                                $groupnamefieldlabel,
+                                                $groupnamefielddesc,
+                                                ''));
+    $groupdescriptionfieldlabel = get_string('remotegroupdescriptionfield', 'enrol_database');
+    $groupdescriptionfielddesc  = get_string('remotegroupdescriptionfield_desc', 'enrol_database');
+    $settings->add(new admin_setting_configtext('enrol_database/remotegroupdescriptionfield',
+                                                $groupdescriptionfieldlabel,
+                                                $groupdescriptionfielddesc,
+                                                ''));
+    $groupidnumberfieldlabel = get_string('remotegroupidnumberfield', 'enrol_database');
+    $groupidnumberfielddesc  = get_string('remotegroupidnumberfield_desc', 'enrol_database');
+    $settings->add(new admin_setting_configtext('enrol_database/remotegroupidnumberfield',
+                                                $groupidnumberfieldlabel,
+                                                $groupidnumberfielddesc,
+                                                ''));
+    $groupingidnumberprefixfieldlabel = get_string('localgroupingidnumberprefixfield', 'enrol_database');
+    $groupingidnumberprefixfielddesc = get_string('localgroupingidnumberprefixfield_desc', 'enrol_database');
+    $settings->add(new admin_setting_configtext('enrol_database/localgroupingidnumberprefix',
+                                                $groupingidnumberprefixfieldlabel,
+                                                $groupingidnumberprefixfielddesc,
+                                                ''));
 
     if (!during_initial_install()) {
         $options = get_default_enrol_roles(context_system::instance());

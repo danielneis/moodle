@@ -116,3 +116,5 @@ $string['validateaddress_help'] = 'When a message is received from a user, Moodl
 If the sender does not match, then the user is sent a notification to confirm that they really did send the email.
 
 If this setting is disabled, then the email address of the sender is not checked at all.';
+$string['xoauth2'] = 'Use XOAUTH2';
+$string['xoauth2_desc'] = 'Use XOAUTH2 to authenticate to the IMAP server. Gmail (and other email providers) have enforced stricter security standards for apps that try to access their IMAP servers, and is blocking access using traditional authentication methods (based on usernames and passwords). In the case of Gmail, you can still change the security settings of your Gmail account to let Moodle connect using traditional methods (this must be allowed by your G Suite Administator if your account is part of a Google Suite domain). Or you can use XOAUTH2 authentication if your email provider supports it (among others Gmail, Office365 and Yahoo support it). You need to specify the OAuth2 Service to be used for this.';

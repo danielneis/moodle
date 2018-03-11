@@ -54,6 +54,10 @@ class moodle_phpmailer extends \PHPMailer\PHPMailer\PHPMailer {
 
         if (!empty($CFG->smtpauthtype)) {
             $this->AuthType = $CFG->smtpauthtype;
+            if ($CFG->smtpauthtype === 'XOAUTH2') {
+                require_once(dirname(__FILE__) . '/moodle_oauth.php');
+                $this->oauth = new moodle_oauth($CFG->smtpoauth2issuer, $CFG->smtpuser);
+            }
         }
 
         // Some MTAs may do double conversion of LF if CRLF used, CRLF is required line ending in RFC 822bis.

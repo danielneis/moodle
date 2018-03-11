@@ -103,6 +103,11 @@ class manager {
             'debug'    => empty($CFG->debugimap) ? null : fopen('php://stderr', 'w'),
         );
 
+        if (!empty($CFG->messageinbound_xoauth2)) {
+            $configuration['xoauth2_token'] = \core\xoauth2\helper::get_token_generator($CFG->messageinbound_oauth2issuer,
+                                                                                        $configuration['username']);
+        }
+
         if (strpos($configuration['hostspec'], ':')) {
             $hostdata = explode(':', $configuration['hostspec']);
             if (count($hostdata) === 2) {

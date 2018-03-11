@@ -67,6 +67,13 @@ if ($hassiteconfig) {
             new lang_string('messageinboundhostssl', 'tool_messageinbound'),
             new lang_string('messageinboundhostssl_desc', 'tool_messageinbound'), 'ssl', $options));
 
+    $settings->add(new admin_setting_configcheckbox('messageinbound_xoauth2',
+            new lang_string('xoauth2', 'tool_messageinbound'),
+            new lang_string('xoauth2_desc', 'tool_messageinbound'), 0));
+
+    $settings->add(\core\xoauth2\helper::service_providers_configselect('messageinbound_oauth2issuer',
+            new lang_string('incomingmailconfiguration', 'tool_messageinbound')));
+
     $settings->add(new admin_setting_configtext('messageinbound_hostuser',
             new lang_string('messageinboundhostuser', 'tool_messageinbound'),
             new lang_string('messageinboundhostuser_desc', 'tool_messageinbound'), '', PARAM_NOTAGS));

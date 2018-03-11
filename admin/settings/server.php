@@ -320,9 +320,12 @@ $temp->add(new admin_setting_configtext('smtphosts', new lang_string('smtphosts'
 $options = array('' => new lang_string('none', 'admin'), 'ssl' => 'SSL', 'tls' => 'TLS');
 $temp->add(new admin_setting_configselect('smtpsecure', new lang_string('smtpsecure', 'admin'),
             new lang_string('configsmtpsecure', 'admin'), '', $options));
-$authtypeoptions = array('LOGIN' => 'LOGIN', 'PLAIN' => 'PLAIN', 'NTLM' => 'NTLM', 'CRAM-MD5' => 'CRAM-MD5');
+$authtypeoptions = array('LOGIN' => 'LOGIN', 'PLAIN' => 'PLAIN', 'NTLM' => 'NTLM',
+                         'CRAM-MD5' => 'CRAM-MD5', 'XOAUTH2' => 'XOAUTH2');
 $temp->add(new admin_setting_configselect('smtpauthtype', new lang_string('smtpauthtype', 'admin'),
             new lang_string('configsmtpauthtype', 'admin'), 'LOGIN', $authtypeoptions));
+$temp->add(\core\xoauth2\helper::service_providers_configselect('smtpoauth2issuer',
+            new lang_string('outgoingmailconfig', 'admin')));
 $temp->add(new admin_setting_configtext('smtpuser', new lang_string('smtpuser', 'admin'),
             new lang_string('configsmtpuser', 'admin'), '', PARAM_NOTAGS));
 $temp->add(new admin_setting_configpasswordunmask('smtppass', new lang_string('smtppass', 'admin'),

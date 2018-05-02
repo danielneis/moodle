@@ -519,7 +519,7 @@ class enrol_database_plugin extends enrol_plugin {
                 $groupingidnumber = $groupingidnumberprefix . $remoteid;
                 $groupingid = $this->get_grouping_id_for_idnumber( $course->id, $groupingidnumber );
 
-                // Is there a regoruping for database enrolment groups?
+                // Is there a grouping for database enrolment groups?
                 $sql = "SELECT g.id, g.name, g.enrolmentkey
                   FROM {groups} g
                     INNER JOIN {groupings_groups} gg ON gg.groupid = g.id AND gg.groupingid = :groupingid
@@ -532,20 +532,23 @@ class enrol_database_plugin extends enrol_plugin {
                 }
 
                 // Get the current group memberships for this course and grouping.
-                $sql = "SELECT u.id, g.enrolmentkey
-                  FROM {user} u
-                    INNER JOIN {groups_members} gm ON u.id = gm.userid
-                    INNER JOIN {groups} g ON gm.groupid = g.id
-                    INNER JOIN {groupings_groups} gg ON gg.groupid = g.id AND gg.groupingid = :groupingid
-                  WHERE g.courseid = :courseid";
+                $sql = "SELECT gm.id, u.id as userid, g.enrolmentkey
+                          FROM {user} u
+                    INNER JOIN {groups_members} gm
+                            ON u.id = gm.userid
+                    INNER JOIN {groups} g
+                            ON gm.groupid = g.id
+                    INNER JOIN {groupings_groups} gg
+                            ON gg.groupid = g.id AND gg.groupingid = :groupingid
+                         WHERE g.courseid = :courseid";
 
                 $params = array('courseid' => $course->id, 'groupingid' => $groupingid);
                 $foundmemberships = $DB->get_records_sql($sql, $params);
-                foreach ($foundmemberships as $userid => $membership) {
+                foreach ($foundmemberships as $groupmemberid => $membership) {
                     $groupenrolmentkey = $membership->enrolmentkey;
                     if (isset($groups[$groupenrolmentkey])) {
                         $groupid = $groups[$groupenrolmentkey]->id;
-                        $currentgroups[$userid][$groupid] = $groupid;
+                        $currentgroups[$membership->userid][$groupid] = $groupid;
                     }
                 }
             }
@@ -588,7 +591,6 @@ class enrol_database_plugin extends enrol_plugin {
                             $roleid = $roles[$fields[$rolefield_l]];
                         }
 
-
                         if (!empty($groupcodefield) && !empty($fields[$groupcodefield])) {
                             $groupenrolmentkey = $fields[$groupcodefield];
                             if (!isset($groups[$groupenrolmentkey])) {
@@ -617,7 +619,7 @@ class enrol_database_plugin extends enrol_plugin {
                                     }
 
                                     // Create the group in the course.
-                                    $newgroup = create_group_in_course(
+                                    $newgroup = $this->create_group_in_course(
                                         $newgroupname,
                                         $newgroupidnumber,
                                         $course->id,
@@ -627,7 +629,7 @@ class enrol_database_plugin extends enrol_plugin {
                                         $trace->output("error: problem creating new group '$newgroupname'", 1);
                                         continue;
                                     }
-                                    $group[$groupenrolmentkey] = $newgroup;
+                                    $groups[$groupenrolmentkey] = $newgroup;
                                     groups_assign_grouping($groupingid, $newgroup->id);
                                 }
                             }
@@ -877,8 +879,9 @@ class enrol_database_plugin extends enrol_plugin {
             }
             $rs->Close();
         } else {
-            $extdb->Close();
             $trace->output('Error reading data from the external course table');
+            $trace->output($extdb->errorMsg());
+            $extdb->Close();
             $trace->finished();
             return 4;
         }
@@ -971,7 +974,7 @@ class enrol_database_plugin extends enrol_plugin {
     protected function get_grouping_id_for_idnumber( $courseid, $idnumber ) {
         global $DB;
 
-        $grouping = groups_get_group_by_idnumber( $courseid, $idnumber );
+        $grouping = groups_get_grouping_by_idnumber( $courseid, $idnumber );
         if (!$grouping) {
 
             // Create the grouping if it doesn't already exist.
@@ -1000,7 +1003,6 @@ class enrol_database_plugin extends enrol_plugin {
      * @param string $enrolmentkey the enrolment key for the new group
      * @return int|false id of new group or false if error
      */
-
     function create_group_in_course( $name, $idnumber, $courseid, $description, $enrolmentkey ) {
         // Create the group in the course.
         $data = new stdClass();
@@ -1010,9 +1012,13 @@ class enrol_database_plugin extends enrol_plugin {
         $data->description = $description;
         $data->enrolmentkey = $enrolmentkey;
 
+        if ($oldgroup = groups_get_group_by_name($courseid, $name)) {
+            return $oldgroup;
+        }
+
         // TODO MDL-51202 groups should belong to this component.
         $newgroupid = groups_create_group($data);
-        if ($$newgroupid) return false;
+        if (!$newgroupid) return false;
         $data->id = $newgroupid;
         return $data;
     }

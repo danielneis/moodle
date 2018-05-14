@@ -680,9 +680,11 @@ class enrol_database_plugin extends enrol_plugin {
                     // Add user to any any new groups.
                     foreach ($usergroups as $groupid) {
                         if (empty($currentgroups[$userid][$groupid])) {
-                            groups_add_member($groupid, $userid, 'enrol_database');
-                            $currentgroups[$userid][$groupid] = $groupid;
-                            $trace->output("adding to group: $userid ==> $groupid", 1);
+                            if (!groups_is_member($groupid, $userid)) {
+                                groups_add_member($groupid, $userid, 'enrol_database');
+                                $currentgroups[$userid][$groupid] = $groupid;
+                                $trace->output("adding to group: $userid ==> $groupid", 1);
+                            }
                         }
                     }
                 }
@@ -691,8 +693,10 @@ class enrol_database_plugin extends enrol_plugin {
                     // Remove user from any groups they shouldn't be in anymore.
                     foreach ($usergroups as $groupid) {
                         if (empty($requestedgroups[$userid][$groupid])) {
-                            groups_remove_member($groupid, $userid, 'enrol_database');
-                            $trace->output("removing from group: $userid ==> $groupid", 1);
+                            if (groups_is_member($groupid, $userid)) {
+                                groups_remove_member($groupid, $userid);
+                                $trace->output("removing from group: $userid ==> $groupid", 1);
+                            }
                         }
                     }
                 }
@@ -1013,7 +1017,8 @@ class enrol_database_plugin extends enrol_plugin {
         $data->enrolmentkey = $enrolmentkey;
 
         if ($oldgroup = groups_get_group_by_name($courseid, $name)) {
-            return $oldgroup;
+            $data->id = $oldgroup;
+            return $data;
         }
 
         // TODO MDL-51202 groups should belong to this component.

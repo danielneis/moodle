@@ -24,12 +24,16 @@
 define(
 [
     'jquery',
+    'core/ajax',
     'core/custom_interaction_events',
+    'core/notification',
     'mod_forum/selectors'
 ],
 function(
     $,
+    Ajax,
     CustomEvents,
+    Notification,
     Selectors
 ) {
 
@@ -261,9 +265,35 @@ function(
         });
     };
 
+    var initSubscriptionToggle = function(root) {
+        $('[data-container="discussion-tools"]').on('click', Selectors.subscription.toggle, function(e, data) {
+            alert('aaah');
+            var toggleElement = $(this);
+            var forumId = toggleElement.data('forumid');
+            var discussionId = toggleElement.data('discussionid');
+            var subscriptionState = toggleElement.data('targetstate');
+
+            Repository.setDiscussionSubscriptionState(forumId, discussionId, subscriptionState)
+                .then(function(context) {
+                    if (subscriptionState == 1) {
+                        $('[data-targetstate=0]').removeClass('hidden');
+                        $('[data-targetstate=1]').addClass('hidden');
+                    } else {
+                        $('[data-targetstate=1]').removeClass('hidden');
+                        $('[data-targetstate=0]').addClass('hidden');
+                    }
+                })
+                .catch(Notification.exception);
+
+            e.preventDefault();
+            data.originalEvent.preventDefault();
+        });
+    };
+
     return {
         init: function(root) {
             initAccessibilityKeyboardNav(root);
+            initSubscriptionToggle(root);
         }
     };
 });

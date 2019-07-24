@@ -44,7 +44,7 @@ define([], function() {
             inpageSubmitBtnText: "[data-region='submit-text']",
             loadingIconContainer: "[data-region='loading-icon-container']",
             repliesContainer: "[data-region='replies-container']",
-            modeSelect: "select[name='mode']"
+            modeSelect: "select[name='mode']",
         },
         lock: {
             toggle: "[data-action='toggle'][data-type='lock-toggle']",

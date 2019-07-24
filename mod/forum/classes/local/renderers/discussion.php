@@ -280,8 +280,6 @@ class discussion {
             'discussionsubscription'
         );
         $html .= forum_get_discussion_subscription_icon_preloaders();
-        // Add the subscription toggle JS.
-        $PAGE->requires->yui_module('moodle-mod_forum-subscriptiontoggle', 'Y.M.mod_forum.subscriptiontoggle.init');
         return $html;
     }
 

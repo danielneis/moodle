@@ -2427,38 +2427,36 @@ function forum_get_discussion_subscription_icon($forum, $discussionid, $returnur
         'returnurl' => $returnurl,
     ));
 
+    $output = $OUTPUT->pix_icon('t/subscribed', get_string('clicktounsubscribe', 'forum'), 'mod_forum');
     if ($includetext) {
-        $o .= $subscriptionstatus ? get_string('subscribed', 'mod_forum') : get_string('notsubscribed', 'mod_forum');
+        $output .= get_string('subscribed', 'mod_forum');
     }
 
-    if ($subscriptionstatus) {
-        $output = $OUTPUT->pix_icon('t/subscribed', get_string('clicktounsubscribe', 'forum'), 'mod_forum');
-        if ($includetext) {
-            $output .= get_string('subscribed', 'mod_forum');
-        }
+    $result = html_writer::link($subscriptionlink, $output, array(
+            'title' => get_string('clicktounsubscribe', 'forum'),
+            'class' => 'discussiontoggle iconsmall' . ($subscriptionstatus ? '' : ' hidden'),
+            'data-type' => 'subscription-toggle',
+            'data-action' => 'toggle',
+            'data-forumid' => $forum->id,
+            'data-discussionid' => $discussionid,
+            'data-targetstate' => 0,
+        ));
 
-        return html_writer::link($subscriptionlink, $output, array(
-                'title' => get_string('clicktounsubscribe', 'forum'),
-                'class' => 'discussiontoggle iconsmall',
-                'data-forumid' => $forum->id,
-                'data-discussionid' => $discussionid,
-                'data-includetext' => $includetext,
-            ));
-
-    } else {
-        $output = $OUTPUT->pix_icon('t/unsubscribed', get_string('clicktosubscribe', 'forum'), 'mod_forum');
-        if ($includetext) {
-            $output .= get_string('notsubscribed', 'mod_forum');
-        }
-
-        return html_writer::link($subscriptionlink, $output, array(
-                'title' => get_string('clicktosubscribe', 'forum'),
-                'class' => 'discussiontoggle iconsmall',
-                'data-forumid' => $forum->id,
-                'data-discussionid' => $discussionid,
-                'data-includetext' => $includetext,
-            ));
+    $output = $OUTPUT->pix_icon('t/unsubscribed', get_string('clicktosubscribe', 'forum'), 'mod_forum');
+    if ($includetext) {
+        $output .= get_string('notsubscribed', 'mod_forum');
     }
+
+    $result .= html_writer::link($subscriptionlink, $output, array(
+            'title' => get_string('clicktosubscribe', 'forum'),
+            'class' => 'discussiontoggle iconsmall' . ($subscriptionstatus ? ' hidden' : ''),
+            'data-type' => 'subscription-toggle',
+            'data-action' => 'toggle',
+            'data-forumid' => $forum->id,
+            'data-discussionid' => $discussionid,
+            'data-targetstate' => 1,
+    ));
+    return $result;
 }
 
 /**

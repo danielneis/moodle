@@ -43,6 +43,14 @@ Feature: Edit quiz marks with no attempts
     And I should see "Total of marks: 10.00"
     And "li input[name=maxmark]" "css_element" should not exist
 
+    When the following "language customisations" exist:
+      | component       | stringid | value |
+      | core_langconfig | decsep   | #     |
+    And I set the max mark for question "First question" to "7#0"
+    Then I should see "7#00"
+    And I should see "3.00"
+    And I should see "Total of marks: 10#00"
+
   @javascript
   Scenario: Set the overall Maximum grade.
     When I set the field "maxgrade" to "10.0"

@@ -88,12 +88,6 @@ require_login($course);
 // Check basic permission
 require_capability('report/progress:view',$context);
 
-// Get group mode
-$group = groups_get_course_group($course,true); // Supposed to verify group
-if ($group===0 && $course->groupmode==SEPARATEGROUPS) {
-    require_capability('moodle/site:accessallgroups',$context);
-}
-
 // Get data on activities and progress of all users, and give error if we've
 // nothing to display (no users or no activities)
 $reportsurl = $CFG->wwwroot.'/course/report.php?id='.$course->id;
@@ -133,11 +127,209 @@ if ($silast !== 'all') {
     $where_params['silast'] = $silast.'%';
 }
 
+// Get the currently applied filters.
+require_once($CFG->dirroot.'/user/lib.php');
+$roleid       = optional_param('roleid', 0, PARAM_INT);
+$groupparam   = optional_param('group', 0, PARAM_INT);
+$filtersapplied = optional_param_array('unified-filters', [], PARAM_NOTAGS);
+$filterwassubmitted = optional_param('unified-filter-submitted', 0, PARAM_BOOL);
+
+// If they passed a role make sure they can view that role.
+if ($roleid) {
+    $viewableroles = get_profile_roles($context);
+
+    // Check if the user can view this role.
+    if (array_key_exists($roleid, $viewableroles)) {
+        $filtersapplied[] = USER_FILTER_ROLE . ':' . $roleid;
+    } else {
+        $roleid = 0;
+    }
+}
+
+// Default group ID.
+$groupid = false;
+$canaccessallgroups = has_capability('moodle/site:accessallgroups', $context);
+if ($course->groupmode != NOGROUPS) {
+    if ($canaccessallgroups) {
+        // Change the group if the user can access all groups and has specified group in the URL.
+        if ($groupparam) {
+            $groupid = $groupparam;
+        }
+    } else {
+        // Otherwise, get the user's default group.
+        $groupid = groups_get_course_group($course, true);
+        if ($course->groupmode == SEPARATEGROUPS && !$groupid) {
+            // The user is not in the group so show message and exit.
+            echo $OUTPUT->notification(get_string('notingroup'));
+            echo $OUTPUT->footer();
+            exit;
+        }
+    }
+}
+$hasgroupfilter = false;
+$searchkeywords = [];
+$enrolid = 0;
+$userfields = get_extra_user_fields($context);
+foreach ($filtersapplied as $index => $filter) {
+    $filtervalue = explode(':', $filter, 2);
+    $value = null;
+    if (count($filtervalue) == 2) {
+        $key = clean_param($filtervalue[0], PARAM_INT);
+        $value = clean_param($filtervalue[1], PARAM_INT);
+    } else {
+        // Search string.
+        $key = USER_FILTER_STRING;
+        $value = clean_param($filtervalue[0], PARAM_TEXT);
+    }
+
+    switch ($key) {
+        case USER_FILTER_ENROLMENT:
+            $enrolid = $value;
+            break;
+        case USER_FILTER_GROUP:
+            $groupid = $value;
+            $hasgroupfilter = true;
+            break;
+        case USER_FILTER_ROLE:
+            $roleid = $value;
+            // Limit list to users with some role only.
+            // We want to query both the current context and parent contexts.
+            list($relatedctxsql, $relatedctxparams) = $DB->get_in_or_equal($context->get_parent_context_ids(true),
+                SQL_PARAMS_NAMED, 'relatedctx');
+
+            // Get users without any role.
+            if ($roleid == -1) {
+                $where[] = "u.id NOT IN (SELECT userid FROM {role_assignments} WHERE contextid $relatedctxsql)";
+                $where_params = array_merge($where_params, $relatedctxparams);
+            } else {
+                $where[] = "u.id IN (SELECT userid FROM {role_assignments} WHERE roleid = :roleid AND contextid $relatedctxsql)";
+                $where_params = array_merge($where_params, array('roleid' => $roleid), $relatedctxparams);
+            }
+            break;
+        case USER_FILTER_STATUS:
+            // We only accept active/suspended statuses.
+            if ($value == ENROL_USER_ACTIVE || $value == ENROL_USER_SUSPENDED) {
+                $status = $value;
+            }
+            break;
+        default:
+            // Search string.
+            $searchkeywords[] = $value;
+
+            $searchkey1 = 'search' . $index . '1';
+            $searchkey2 = 'search' . $index . '2';
+            $searchkey3 = 'search' . $index . '3';
+            $searchkey4 = 'search' . $index . '4';
+            $searchkey5 = 'search' . $index . '5';
+            $searchkey6 = 'search' . $index . '6';
+            $searchkey7 = 'search' . $index . '7';
+
+            $conditions = array();
+            // Search by fullname.
+            $fullname = $DB->sql_fullname('u.firstname', 'u.lastname');
+            $conditions[] = $DB->sql_like($fullname, ':' . $searchkey1, false, false);
+
+            // Search by email.
+            $email = $DB->sql_like('email', ':' . $searchkey2, false, false);
+            if (!in_array('email', $userfields)) {
+                $maildisplay = 'maildisplay' . $index;
+                $userid1 = 'userid' . $index . '1';
+                // Prevent users who hide their email address from being found by others
+                // who aren't allowed to see hidden email addresses.
+                $email = "(". $email ." AND (" .
+                        "u.maildisplay <> :$maildisplay " .
+                        "OR u.id = :$userid1". // User can always find himself.
+                        "))";
+                $where_params[$maildisplay] = core_user::MAILDISPLAY_HIDE;
+                $where_params[$userid1] = $USER->id;
+            }
+            $conditions[] = $email;
+
+            // Search by idnumber.
+            $idnumber = $DB->sql_like('idnumber', ':' . $searchkey3, false, false);
+            if (!in_array('idnumber', $userfields)) {
+                $userid2 = 'userid' . $index . '2';
+                // Users who aren't allowed to see idnumbers should at most find themselves
+                // when searching for an idnumber.
+                $idnumber = "(". $idnumber . " AND u.id = :$userid2)";
+                $where_params[$userid2] = $USER->id;
+            }
+            $conditions[] = $idnumber;
+
+            if (!empty($CFG->showuseridentity)) {
+                // Search all user identify fields.
+                $extrasearchfields = explode(',', $CFG->showuseridentity);
+                foreach ($extrasearchfields as $extrasearchfield) {
+                    if (in_array($extrasearchfield, ['email', 'idnumber', 'country'])) {
+                        // Already covered above. Search by country not supported.
+                        continue;
+                    }
+                    $param = $searchkey3 . $extrasearchfield;
+                    $condition = $DB->sql_like($extrasearchfield, ':' . $param, false, false);
+                    $where_params[$param] = "%$keyword%";
+                    if (!in_array($extrasearchfield, $userfields)) {
+                        // User cannot see this field, but allow match if their own account.
+                        $userid3 = 'userid' . $index . '3' . $extrasearchfield;
+                        $condition = "(". $condition . " AND u.id = :$userid3)";
+                        $where_params[$userid3] = $USER->id;
+                    }
+                    $conditions[] = $condition;
+                }
+            }
+
+            // Search by middlename.
+            $middlename = $DB->sql_like('middlename', ':' . $searchkey4, false, false);
+            $conditions[] = $middlename;
+
+            // Search by alternatename.
+            $alternatename = $DB->sql_like('alternatename', ':' . $searchkey5, false, false);
+            $conditions[] = $alternatename;
+
+            // Search by firstnamephonetic.
+            $firstnamephonetic = $DB->sql_like('firstnamephonetic', ':' . $searchkey6, false, false);
+            $conditions[] = $firstnamephonetic;
+
+            // Search by lastnamephonetic.
+            $lastnamephonetic = $DB->sql_like('lastnamephonetic', ':' . $searchkey7, false, false);
+            $conditions[] = $lastnamephonetic;
+
+            $keyword = $value;
+
+            $where[] = "(". implode(" OR ", $conditions) .") ";
+            $where_params[$searchkey1] = "%$keyword%";
+            $where_params[$searchkey2] = "%$keyword%";
+            $where_params[$searchkey3] = "%$keyword%";
+            $where_params[$searchkey4] = "%$keyword%";
+            $where_params[$searchkey5] = "%$keyword%";
+            $where_params[$searchkey6] = "%$keyword%";
+            $where_params[$searchkey7] = "%$keyword%";
+            break;
+    }
+}
+
+// If course supports groups we may need to set a default.
+if (!empty($groupid)) {
+    if ($canaccessallgroups) {
+        // User can access all groups, let them filter by whatever was selected.
+        $filtersapplied[] = USER_FILTER_GROUP . ':' . $groupid;
+    } else if (!$filterwassubmitted && $course->groupmode == VISIBLEGROUPS) {
+        // If we are in a course with visible groups and the user has not submitted anything and does not have
+        // access to all groups, then set a default group.
+        $filtersapplied[] = USER_FILTER_GROUP . ':' . $groupid;
+    } else if (!$hasgroupfilter && $course->groupmode != VISIBLEGROUPS) {
+        // The user can't access all groups and has not set a group filter in a course where the groups are not visible
+        // then apply a default group filter.
+        $filtersapplied[] = USER_FILTER_GROUP . ':' . $groupid;
+    } else if (!$hasgroupfilter) { // No need for the group id to be set.
+        $groupid = false;
+    }
+}
+
 // Get user match count
-$total = $completion->get_num_tracked_users(implode(' AND ', $where), $where_params, $group);
+$total = $completion->get_num_tracked_users(implode(' AND ', $where), $where_params, $groupid);
 
 // Total user count
-$grandtotal = $completion->get_num_tracked_users('', array(), $group);
+$grandtotal = $completion->get_num_tracked_users('', array(), $groupid);
 
 // Get user data
 $progress = array();
@@ -146,7 +338,7 @@ if ($total) {
     $progress = $completion->get_progress_all(
         implode(' AND ', $where),
         $where_params,
-        $group,
+        $groupid,
         $firstnamesort ? 'u.firstname ASC, u.lastname ASC' : 'u.lastname ASC, u.firstname ASC',
         $csv ? 0 : COMPLETION_REPORT_PAGE,
         $csv ? 0 : $start,
@@ -176,9 +368,10 @@ if ($csv && $grandtotal && count($activities)>0) { // Only show CSV if there are
     $strreports = get_string("reports");
     $strcompletion = get_string('activitycompletion', 'completion');
 
-    $PAGE->set_title($strcompletion);
+    $PAGE->set_title($course->shortname . ": " . $strcompletion);
     $PAGE->set_heading($course->fullname);
     echo $OUTPUT->header();
+    echo $OUTPUT->heading($strcompletion);
     $PAGE->requires->js_call_amd('report_progress/completion_override', 'init', [fullname($USER)]);
 
     // Handle groups (if enabled)
@@ -191,11 +384,21 @@ if (count($activities)==0) {
     exit;
 }
 
-// If no users in this course what-so-ever
-if (!$grandtotal) {
-    echo $OUTPUT->container(get_string('err_nousers', 'completion'), 'errorbox errorboxcontent');
-    echo $OUTPUT->footer();
-    exit;
+if ($groupid > 0 && ($course->groupmode != SEPARATEGROUPS || $canaccessallgroups)) {
+    $grouprenderer = $PAGE->get_renderer('core_group');
+    $groupdetailpage = new \core_group\output\group_details($groupid);
+    echo $grouprenderer->group_details($groupdetailpage);
+}
+
+$baseurl = $PAGE->url;
+
+// Render the unified filter.
+$renderer = $PAGE->get_renderer('report_progress');
+echo $renderer->unified_filter($course, $context, $filtersapplied, $baseurl);
+
+// Add filters to the baseurl after creating unified_filter to avoid losing them.
+foreach (array_unique($filtersapplied) as $filterix => $filter) {
+    $baseurl->param('unified-filters[' . $filterix . ']', $filter);
 }
 
 // Build link for paging

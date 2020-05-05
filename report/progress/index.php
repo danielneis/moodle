@@ -366,7 +366,7 @@ if ($csv && $grandtotal && count($activities)>0) { // Only show CSV if there are
 
     // Navigation and header
     $strreports = get_string("reports");
-    $strcompletion = get_string('activitycompletion', 'completion');
+    $strcompletion = get_string('pluginname', 'report_progress');
 
     $PAGE->set_title($course->shortname . ": " . $strcompletion);
     $PAGE->set_heading($course->fullname);
@@ -393,8 +393,10 @@ if ($groupid > 0 && ($course->groupmode != SEPARATEGROUPS || $canaccessallgroups
 $baseurl = $PAGE->url;
 
 // Render the unified filter.
-$renderer = $PAGE->get_renderer('report_progress');
-echo $renderer->unified_filter($course, $context, $filtersapplied, $baseurl);
+if (!$csv) {
+    $renderer = $PAGE->get_renderer('report_progress');
+    echo $renderer->unified_filter($course, $context, $filtersapplied, $baseurl);
+}
 
 // Add filters to the baseurl after creating unified_filter to avoid losing them.
 foreach (array_unique($filtersapplied) as $filterix => $filter) {
@@ -467,6 +469,15 @@ if ($total > COMPLETION_REPORT_PAGE) {
     $pagingbar .= '</div>';
 }
 
+$customprofilefields = array_filter(array_map('trim', explode(',', get_config('report_progress', 'customprofilefields'))));
+if ($customprofilefields) {
+    list($sqlfields, $params) = $DB->get_in_or_equal($customprofilefields);
+    $sql = "SELECT shortname, name
+              FROM {user_info_field}
+              WHERE shortname {$sqlfields}";
+    $customfieldsrecords = $DB->get_records_sql($sql, $params);
+}
+
 // Okay, let's draw the table of progress info,
 
 // Start of table
@@ -505,9 +516,20 @@ if (!$csv) {
         echo '<th scope="col" class="completion-identifyfield">' .
                 get_user_field_name($field) . '</th>';
     }
+
+    if ($customprofilefields) {
+        foreach ($customprofilefields as $field) {
+            echo '<th scope="col" class="completion-identifyfield">' .  s($customfieldsrecords[$field]->name) . '</th>';
+        }
+    }
 } else {
     foreach ($extrafields as $field) {
         echo $sep . csv_quote(get_user_field_name($field));
+    }
+    if ($customprofilefields) {
+        foreach ($customprofilefields as $field) {
+            echo $sep . csv_quote($customfieldsrecords[$field]->name);
+        }
     }
 }
 
@@ -557,17 +579,26 @@ if ($csv) {
 
 // Row for each user
 foreach($progress as $user) {
+    if ($customprofilefields) {
+        profile_load_data($user);
+    }
     // User name
     if ($csv) {
         print csv_quote(fullname($user));
         foreach ($extrafields as $field) {
             echo $sep . csv_quote($user->{$field});
         }
+        foreach ($customprofilefields as $field) {
+            echo $sep . csv_quote($user->{'profile_field_' . $field});
+        }
     } else {
         print '<tr><th scope="row"><a href="'.$CFG->wwwroot.'/user/view.php?id='.
             $user->id.'&amp;course='.$course->id.'">'.fullname($user).'</a></th>';
         foreach ($extrafields as $field) {
             echo '<td>' . s($user->{$field}) . '</td>';
+        }
+        foreach ($customprofilefields as $field) {
+            echo '<td>' . s($user->{'profile_field_' . $field}) . '</td>';
         }
     }
 

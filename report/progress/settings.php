@@ -15,19 +15,18 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Lang strings
+ * Activity Completion report settings.
  *
- * @package    report
- * @subpackage progress
- * @copyright  2008 Sam Marshall
+ * @package    report_progress
+ * @copyright  2020 Daniel Neis Araujo <danielneis@gmail.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-$string['customprofilefields'] = 'Custom profile fields';
-$string['customprofilefields_desc'] = 'This is a comma separated list with shortnames of custom profile fields to be displayed on the report';
-$string['pluginname'] = 'Activity completion';
-$string['page-report-progress-x'] = 'Any activity completion report';
-$string['page-report-progress-index'] = 'Activity completion report';
-$string['page-report-progress-user'] = 'User activity completion report';
-$string['privacy:metadata'] = 'The Activity completion report only shows data stored in other locations.';
-$string['progress:view'] = 'View activity completion reports';
+defined('MOODLE_INTERNAL') || die();
+
+$settings->add(new admin_setting_configtext(
+    'report_progress/customprofilefields',
+    new lang_string('customprofilefields', 'report_progress'),
+    new lang_string('customprofilefields_desc', 'report_progress'),
+    ''
+));

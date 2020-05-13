@@ -55,6 +55,15 @@ class renderer extends plugin_renderer_base {
 
         $filteroptions = [];
 
+        // Filter options for progress percentage.
+        $criteria = get_string('progress', 'completion');
+        $progressoptions = [];
+        for ($i = 0; $i < 101; $i += 10) {
+            $label = $i . '%';
+            $progressoptions += $this->format_filter_option(USER_FILTER_PROGRESS, $criteria, $i, $label);
+        }
+        $filteroptions += $progressoptions;
+
         // Filter options for role.
         $roleseditable = has_capability('moodle/role:assign', $context);
         $roles = get_viewable_roles($context);

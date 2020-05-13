@@ -130,6 +130,7 @@ if ($silast !== 'all') {
 
 // Get the currently applied filters.
 require_once($CFG->dirroot.'/user/lib.php');
+define('USER_FILTER_PROGRESS', 7);
 $roleid       = optional_param('roleid', 0, PARAM_INT);
 $groupparam   = optional_param('group', 0, PARAM_INT);
 $filtersapplied = optional_param_array('unified-filters', [], PARAM_NOTAGS);
@@ -168,6 +169,7 @@ if ($course->groupmode != NOGROUPS) {
     }
 }
 $hasgroupfilter = false;
+$hasprogressfilter = false;
 $searchkeywords = [];
 $enrolid = 0;
 $userfields = get_extra_user_fields($context);
@@ -184,6 +186,10 @@ foreach ($filtersapplied as $index => $filter) {
     }
 
     switch ($key) {
+        case USER_FILTER_PROGRESS:
+            $maxprogress = $value;
+            $hasprogressfilter = true;
+            break;
         case USER_FILTER_ENROLMENT:
             $enrolid = $value;
             break;
@@ -583,6 +589,24 @@ if ($csv) {
 
 // Row for each user
 foreach($progress as $user) {
+
+    $completed = 0;
+    if ($completion->is_course_complete($user->id)) {
+        $percentagecompleted = 100;
+    }
+    if ($hasprogressfilter) {
+        // Get the number of modules that have been completed.
+        foreach ($activities as $module) {
+            $data = $completion->get_data($module, true, $user->id);
+            $completed += $data->completionstate == COMPLETION_INCOMPLETE ? 0 : 1;
+        }
+
+        $percentagecompleted = ($completed / $countactivities) * 100;
+
+        if ($percentagecompleted > $maxprogress) {
+            continue;
+        }
+    }
     // User name
     if ($csv) {
         print csv_quote(fullname($user));
@@ -607,11 +631,6 @@ foreach($progress as $user) {
                 echo '<td>' . s($user->{'profile_field_' . $field}) . '</td>';
             }
         }
-    }
-
-    $completed = 0;
-    if ($completion->is_course_complete($user->id)) {
-        $percentagecompleted = 100;
     }
 
     // Progress for each activity

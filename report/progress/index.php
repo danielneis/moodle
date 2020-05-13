@@ -93,6 +93,7 @@ require_capability('report/progress:view',$context);
 $reportsurl = $CFG->wwwroot.'/course/report.php?id='.$course->id;
 $completion = new completion_info($course);
 $activities = $completion->get_activities();
+$countactivities = count($activities);
 
 if ($sifirst !== 'all') {
     set_user_preference('ifirst', $sifirst);
@@ -573,8 +574,10 @@ foreach($activities as $activity) {
 }
 
 if ($csv) {
+    print $sep.csv_quote(get_string('progress', 'completion'));
     print $line;
 } else {
+    print '<th scope="col" class="completion-header" >'.get_string('progress', 'completion').'</th>';
     print '</tr></thead><tbody>';
 }
 
@@ -606,6 +609,11 @@ foreach($progress as $user) {
         }
     }
 
+    $completed = 0;
+    if ($completion->is_course_complete($user->id)) {
+        $percentagecompleted = 100;
+    }
+
     // Progress for each activity
     foreach($activities as $activity) {
 
@@ -628,12 +636,15 @@ foreach($progress as $user) {
                 break;
             case COMPLETION_COMPLETE :
                 $completiontype = 'y'.($overrideby ? '-override' : '');
+                $completed++;
                 break;
             case COMPLETION_COMPLETE_PASS :
                 $completiontype = 'pass';
+                $completed++;
                 break;
             case COMPLETION_COMPLETE_FAIL :
                 $completiontype = 'fail';
+                $completed++;
                 break;
         }
         $completiontrackingstring = $activity->completion == COMPLETION_TRACKING_AUTOMATIC ? 'auto' : 'manual';
@@ -645,12 +656,12 @@ foreach($progress as $user) {
         } else {
             $describe = get_string('completion-' . $completiontype, 'completion');
         }
-        $a=new StdClass;
-        $a->state=$describe;
-        $a->date=$date;
-        $a->user=fullname($user);
+        $a = new StdClass;
+        $a->state = $describe;
+        $a->date = $date;
+        $a->user = fullname($user);
         $a->activity = $formattedactivities[$activity->id]->displayname;
-        $fulldescribe=get_string('progress-title','completion',$a);
+        $fulldescribe = get_string('progress-title','completion',$a);
 
         if ($csv) {
             if ($date != '') {
@@ -673,11 +684,17 @@ foreach($progress as $user) {
             print '<td class="completion-progresscell '.$formattedactivities[$activity->id]->datepassedclass.'">'.
                 $celltext . '</td>';
         }
+
+    }
+    if (!isset($percentagecompleted)) {
+        $percentagecompleted = ($completed / $countactivities) * 100;
     }
 
     if ($csv) {
+        print $sep.csv_quote($percentagecompleted . '%');
         print $line;
     } else {
+        print '<td class="completion-progresscell">'.  $percentagecompleted . '%</td>';
         print '</tr>';
     }
 }

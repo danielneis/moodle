@@ -57,9 +57,16 @@ class renderer extends plugin_renderer_base {
 
         // Filter options for progress percentage.
         $criteria = get_string('progress', 'completion');
+        $notstartedstr = get_string('notstartedpercentage', 'report_progress');
+        $inprogressstr = get_string('onetoninetynine', 'report_progress');
+        $completedstr = get_string('completedpercentage', 'report_progress');
         $progressoptions = [];
-        for ($i = 0; $i < 101; $i += 10) {
-            $label = $i . '%';
+        $progressoptions += $this->format_filter_option(USER_FILTER_PROGRESS, $criteria, 0, $notstartedstr);
+        $progressoptions += $this->format_filter_option(USER_FILTER_PROGRESS, $criteria, 101, $inprogressstr);
+        $progressoptions += $this->format_filter_option(USER_FILTER_PROGRESS, $criteria, 102, $completedstr);
+
+        for ($i = 100; $i >= 10; $i -= 10) {
+            $label = get_string('upto', 'report_progress', $i);
             $progressoptions += $this->format_filter_option(USER_FILTER_PROGRESS, $criteria, $i, $label);
         }
         $filteroptions += $progressoptions;

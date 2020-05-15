@@ -23,11 +23,15 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+$string['completedpercentage'] = 'Completed (100%)';
 $string['customprofilefields'] = 'Custom profile fields';
 $string['customprofilefields_desc'] = 'This is a comma separated list with shortnames of custom profile fields to be displayed on the report';
+$string['notstartedpercentage'] = 'Not started (0%)';
+$string['onetoninetynine'] = 'In progress (1% up to 99%)';
 $string['pluginname'] = 'Activity completion';
 $string['page-report-progress-x'] = 'Any activity completion report';
 $string['page-report-progress-index'] = 'Activity completion report';
 $string['page-report-progress-user'] = 'User activity completion report';
 $string['privacy:metadata'] = 'The Activity completion report only shows data stored in other locations.';
 $string['progress:view'] = 'View activity completion reports';
+$string['upto'] = 'Up to {$a}%';

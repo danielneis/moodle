@@ -603,7 +603,14 @@ foreach($progress as $user) {
 
         $percentagecompleted = ($completed / $countactivities) * 100;
 
-        if ($percentagecompleted > $maxprogress) {
+        // Tricky one:
+        // When maxprogress equals 101 means from 1 up to 99 percent.
+        // When maxprogress equals 101 means equals 100%
+        if (($maxprogress == 101) && (($percentagecompleted < 1) || ($percentagecompleted > 99))) {
+            continue;
+        } else if (($maxprogress == 102) && ($percentagecompleted != 99)) {
+            continue;
+        } else if ($percentagecompleted > $maxprogress) {
             continue;
         }
     }

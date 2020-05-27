@@ -55,6 +55,14 @@ $start   = optional_param('start', 0, PARAM_INT);
 $extrafields = get_extra_user_fields($context);
 $leftcols = 1 + count($extrafields);
 
+// Get the currently applied filters.
+require_once($CFG->dirroot.'/user/lib.php');
+define('USER_FILTER_PROGRESS', 7);
+$roleid       = optional_param('roleid', 0, PARAM_INT);
+$groupparam   = optional_param('group', 0, PARAM_INT);
+$filtersapplied = optional_param_array('unified-filters', [], PARAM_NOTAGS);
+$filterwassubmitted = optional_param('unified-filter-submitted', 0, PARAM_BOOL);
+
 function csv_quote($value) {
     global $excel;
     if ($excel) {
@@ -79,6 +87,9 @@ if ($sifirst !== 'all') {
 }
 if ($silast !== 'all') {
     $url->param('silast', $silast);
+}
+if ($filterwassubmitted != 0) {
+    $url->param('unified-filter-submitted', $filterwassubmitted);
 }
 $PAGE->set_url($url);
 $PAGE->set_pagelayout('report');
@@ -127,14 +138,6 @@ if ($silast !== 'all') {
     $where[] = $DB->sql_like('u.lastname', ':silast', false, false);
     $where_params['silast'] = $silast.'%';
 }
-
-// Get the currently applied filters.
-require_once($CFG->dirroot.'/user/lib.php');
-define('USER_FILTER_PROGRESS', 7);
-$roleid       = optional_param('roleid', 0, PARAM_INT);
-$groupparam   = optional_param('group', 0, PARAM_INT);
-$filtersapplied = optional_param_array('unified-filters', [], PARAM_NOTAGS);
-$filterwassubmitted = optional_param('unified-filter-submitted', 0, PARAM_BOOL);
 
 // If they passed a role make sure they can view that role.
 if ($roleid) {
@@ -590,19 +593,19 @@ if ($csv) {
 // Row for each user
 foreach($progress as $user) {
 
-    $completed = 0;
     if ($completion->is_course_complete($user->id)) {
         $percentagecompleted = 100;
-    }
-    if ($hasprogressfilter) {
+    } else {
         // Get the number of modules that have been completed.
+        $completed = 0;
         foreach ($activities as $module) {
             $data = $completion->get_data($module, true, $user->id);
             $completed += $data->completionstate == COMPLETION_INCOMPLETE ? 0 : 1;
         }
+        $percentagecompleted = number_format(($completed / $countactivities) * 100, 0);
+    }
 
-        $percentagecompleted = ($completed / $countactivities) * 100;
-
+    if ($hasprogressfilter) {
         // Tricky one:
         // When maxprogress equals 101 means from 1 up to 99 percent.
         // When maxprogress equals 101 means equals 100%
@@ -662,15 +665,12 @@ foreach($progress as $user) {
                 break;
             case COMPLETION_COMPLETE :
                 $completiontype = 'y'.($overrideby ? '-override' : '');
-                $completed++;
                 break;
             case COMPLETION_COMPLETE_PASS :
                 $completiontype = 'pass';
-                $completed++;
                 break;
             case COMPLETION_COMPLETE_FAIL :
                 $completiontype = 'fail';
-                $completed++;
                 break;
         }
         $completiontrackingstring = $activity->completion == COMPLETION_TRACKING_AUTOMATIC ? 'auto' : 'manual';
@@ -711,9 +711,6 @@ foreach($progress as $user) {
                 $celltext . '</td>';
         }
 
-    }
-    if (!isset($percentagecompleted)) {
-        $percentagecompleted = ($completed / $countactivities) * 100;
     }
 
     if ($csv) {

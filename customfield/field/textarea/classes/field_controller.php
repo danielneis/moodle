@@ -139,7 +139,7 @@ class field_controller extends \core_customfield\field_controller {
         $configdata['defaultvalue'] = $tempvalue->defaultvalue;
         $configdata['defaultvalueformat'] = $tempvalue->defaultvalueformat;
         unset($configdata['defaultvalue_editor']);
-        $this->field->set('configdata', json_encode($configdata));
+        $this->field->set('configdata', json_encode($configdata, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
         $this->field->save();
     }
 }

@@ -138,7 +138,7 @@ class api {
     public static function save_field_configuration(field_controller $field, \stdClass $formdata) {
         foreach ($formdata as $key => $value) {
             if ($key === 'configdata' && is_array($formdata->configdata)) {
-                $field->set($key, json_encode($value));
+                $field->set($key, json_encode($value, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
             } else if ($key === 'id' || ($key === 'type' && $field->get('id'))) {
                 continue;
             } else if (field::has_property($key)) {

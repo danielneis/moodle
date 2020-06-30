@@ -134,7 +134,7 @@ class core_customfield_generator extends component_generator_base {
             'endyear' => 3000,
             'includetime' => 1,
         ];
-        $record->configdata = json_encode($configdata);
+        $record->configdata = json_encode($configdata, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
 
         $field = field_controller::create(0, (object)['type' => $record->type], $category);
         $handler->save_field_configuration($field, $record);

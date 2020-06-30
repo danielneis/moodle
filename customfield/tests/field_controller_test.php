@@ -229,22 +229,41 @@ class core_customfield_field_controller_testcase extends advanced_testcase {
 
     /**
      * Tests for \core_customfield\field_controller::get_configdata_property() behaviour.
+     *
+     * @dataProvider unescaped_unicode_export_provider
+     * @param string $text
+     * @covers ::get_configdata_property
      */
-    public function test_get_configdata_property() {
+    public function test_get_configdata_property($text) {
         $this->resetAfterTest();
 
         $lpg = $this->get_generator();
         $category = $lpg->create_category();
-        $configdata = ['a' => 'b', 'c' => ['d', 'e']];
-        $field = field_controller::create(0, (object)['type' => 'text',
-            'configdata' => json_encode($configdata), 'shortname' => 'a', 'name' => 'a'], $category);
+        $configdata = ['a' => $text, 'c' => [$text, 'e']];
+        $field = field_controller::create(0,
+            (object)['type' => 'text',
+                'configdata' => json_encode($configdata, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT),
+                'shortname' => 'a',
+                'name' => 'a'], $category);
         $field->save();
 
         // Retrieve field and check configdata.
         $field = field_controller::create($field->get('id'));
         $this->assertEquals($configdata, $field->get('configdata'));
-        $this->assertEquals('b', $field->get_configdata_property('a'));
-        $this->assertEquals(['d', 'e'], $field->get_configdata_property('c'));
+        $this->assertEquals($text, $field->get_configdata_property('a'));
+        $this->assertEquals([$text, 'e'], $field->get_configdata_property('c'));
         $this->assertEquals(null, $field->get_configdata_property('x'));
+    }
+
+
+    /**
+     * Provider for various user preferences.
+     *
+     * @return array
+     */
+    public function unescaped_unicode_export_provider() {
+        return [
+            'Unicode' => ['ةكءيٓ‌پچژکگیٹڈڑہھےâîûğŞAaÇÖáǽ你好!'],
+        ];
     }
 }

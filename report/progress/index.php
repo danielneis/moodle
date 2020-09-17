@@ -302,10 +302,12 @@ if (!$csv) {
         echo '<th scope="col" class="completion-identifyfield">' .
                 get_user_field_name($field) . '</th>';
     }
+    echo '<th scope="col">Data de matrícula</th>';
 } else {
     foreach ($extrafields as $field) {
         echo $sep . csv_quote(get_user_field_name($field));
     }
+    echo $sep . csv_quote('Data de matrícula');
 }
 
 // Activities
@@ -358,18 +360,42 @@ if ($csv) {
 
 // Row for each user
 foreach($progress as $user) {
+    $sql = "SELECT UE.timestart, UE.timecreated
+              FROM {enrol} E
+              JOIN {user_enrolments} UE
+                ON UE.enrolid = E.id
+             WHERE E.enrol= ?
+               AND E.courseid = ?
+               AND UE.userid = ?";
+    if (!$enrolstart = $DB->get_record_sql($sql, ['manual', $course->id, $user->id])) {
+        if (!$enrolstart = $DB->get_record_sql($sql, ['self', $course->id, $user->id])) {
+            if (!$enrolstart = $DB->get_record_sql($sql, ['cohort', $course->id, $user->id])) {
+                $enrolstart = ''; 
+            }
+        }
+    }   
+    if ($enrolstart) {
+        if ($enrolstart->timestart != 0) {
+            $enrolstart = userdate($enrolstart->timestart, get_string('strftimedatefullshort', 'langconfig'));
+        } else {
+            $enrolstart = userdate($enrolstart->timecreated, get_string('strftimedatefullshort', 'langconfig'));
+        }
+    }   
+
     // User name
     if ($csv) {
         print csv_quote(fullname($user));
         foreach ($extrafields as $field) {
             echo $sep . csv_quote($user->{$field});
         }
+	print $sep . csv_quote($enrolstart);
     } else {
         print '<tr><th scope="row"><a href="'.$CFG->wwwroot.'/user/view.php?id='.
             $user->id.'&amp;course='.$course->id.'">'.fullname($user).'</a></th>';
         foreach ($extrafields as $field) {
             echo '<td>' . s($user->{$field}) . '</td>';
         }
+	print '<td>' . $enrolstart . '</td>';
     }
 
     // Progress for each activity

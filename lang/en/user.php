@@ -33,6 +33,7 @@ $string['clearfilterselection'] = 'Remove "{$a}" from filter';
 $string['countparticipantsfound'] = '{$a} participants found';
 $string['filterrowlegend'] = 'Filter {$a}';
 $string['filtersetmatchdescription'] = 'How multiple filters should be combined';
+$string['gotocourse'] = 'Go to course';
 $string['match'] = 'Match';
 $string['matchofthefollowing'] = 'of the following:';
 $string['moodlenetprofile'] = 'MoodleNet profile';
@@ -148,3 +149,11 @@ $string['selectfiltertype'] = 'Select';
 $string['target:upcomingactivitiesdue'] = 'Upcoming activities due';
 $string['target:upcomingactivitiesdue_help'] = 'This target generates reminders for upcoming activities due.';
 $string['target:upcomingactivitiesdueinfo'] = 'All upcoming activities due insights are listed here. These students have received these insights directly.';
+$string['target:upcomingcoursesstarting'] = 'Upcoming courses starting';
+$string['target:upcomingcoursesstarting_help'] = 'This target generates reminders for upcoming courses starting.';
+$string['target:upcomingcoursesstartinginfo'] = 'All courses starting insights are listed here. These students have received these insights directly.';
+$string['viewupcomingcoursesstarting'] = 'View the upcoming courses starting';
+$string['youhaveupcomingcoursesstarting'] = 'You have upcoming courses starting.';
+$string['youhaveupcomingcoursesstartinginfo'] = 'Hi, {$a}
+
+<br/><br/>You have upcoming courses starting:';

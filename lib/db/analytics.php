@@ -113,4 +113,12 @@ $models = [
         'timesplitting' => '\core\analytics\time_splitting\past_month',
         'enabled' => true,
     ],
+    [
+        'target' => '\core_user\analytics\target\upcoming_courses_starting',
+        'indicators' => [
+            '\core_course\analytics\indicator\courses_starting',
+        ],
+        'timesplitting' => '\core\analytics\time_splitting\upcoming_week',
+        'enabled' => true,
+    ],
 ];

@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Courses starting indicator.
+ * Courses ending indicator.
  *
  * @package   core
  * @copyright 2020 Daniel Neis Araujo <danielneis@gmail.com>
@@ -33,7 +33,7 @@ defined('MOODLE_INTERNAL') || die();
  * @copyright 2020 Daniel Neis Araujo <danielneis@gmail.com>
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class courses_starting extends \core_analytics\local\indicator\binary {
+class courses_ending extends \core_analytics\local\indicator\binary {
 
     /**
      * Returns the name.
@@ -43,7 +43,7 @@ class courses_starting extends \core_analytics\local\indicator\binary {
      * @return \lang_string
      */
     public static function get_name() : \lang_string {
-        return new \lang_string('indicator:coursesstarting');
+        return new \lang_string('indicator:coursesending');
     }
 
     /**
@@ -68,17 +68,17 @@ class courses_starting extends \core_analytics\local\indicator\binary {
 
         $user = $this->retrieve('user', $sampleid);
 
-        $courses = enrol_get_all_users_courses($user->id);
+        $courses = enrol_get_all_users_courses($user->id, false, ['enddate']);
 
         if (!empty($courses)) {
             $useractionevents = [];
             foreach ($courses as $c) {
-                if (($c->startdate >= $starttime) && ($c->startdate <= $endtime)) {
+                if (($c->enddate >= $starttime) && ($c->enddate <= $endtime)) {
                     $useractionevents[$c->id] = (object)[
                         'id' => $c->id,
                         'coursename' => format_string($c->fullname),
                         'shortname' => $c->shortname,
-                        'startdate' => $c->startdate,
+                        'enddate' => $c->enddate,
                         'url' => new \moodle_url('/course/view.php', ['id' => $c->id]),
                     ];
                 }

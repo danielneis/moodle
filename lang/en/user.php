@@ -149,10 +149,18 @@ $string['selectfiltertype'] = 'Select';
 $string['target:upcomingactivitiesdue'] = 'Upcoming activities due';
 $string['target:upcomingactivitiesdue_help'] = 'This target generates reminders for upcoming activities due.';
 $string['target:upcomingactivitiesdueinfo'] = 'All upcoming activities due insights are listed here. These students have received these insights directly.';
+$string['target:upcomingcoursesending'] = 'Upcoming courses ending';
+$string['target:upcomingcoursesending_help'] = 'This target generates reminders for upcoming courses ending.';
+$string['target:upcomingcoursesendinginfo'] = 'All courses ending insights are listed here. These students have received these insights directly.';
 $string['target:upcomingcoursesstarting'] = 'Upcoming courses starting';
 $string['target:upcomingcoursesstarting_help'] = 'This target generates reminders for upcoming courses starting.';
 $string['target:upcomingcoursesstartinginfo'] = 'All courses starting insights are listed here. These students have received these insights directly.';
+$string['viewupcomingcoursesending'] = 'View the upcoming courses ending';
 $string['viewupcomingcoursesstarting'] = 'View the upcoming courses starting';
+$string['youhaveupcomingcoursesending'] = 'You have upcoming courses ending.';
+$string['youhaveupcomingcoursesendinginfo'] = 'Hi, {$a}
+
+<br/><br/>You have upcoming courses ending:';
 $string['youhaveupcomingcoursesstarting'] = 'You have upcoming courses starting.';
 $string['youhaveupcomingcoursesstartinginfo'] = 'Hi, {$a}
 

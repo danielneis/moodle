@@ -121,4 +121,12 @@ $models = [
         'timesplitting' => '\core\analytics\time_splitting\upcoming_week',
         'enabled' => true,
     ],
+    [
+        'target' => '\core_user\analytics\target\upcoming_courses_ending',
+        'indicators' => [
+            '\core_course\analytics\indicator\courses_ending',
+        ],
+        'timesplitting' => '\core\analytics\time_splitting\upcoming_week',
+        'enabled' => true,
+    ],
 ];

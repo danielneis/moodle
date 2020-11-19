@@ -33398,6 +33398,7 @@ textarea[data-auto-rows] {
 .form-inline[data-fieldtype=autocomplete],
 .form-inline[data-fieldtype=tags] {
   display: block;
+  position: static;
 }
 
 [data-fieldtype=editor] > div {
@@ -36816,6 +36817,13 @@ span[data-flexitour=container][x-placement=right] div[data-role=arrow]:after, sp
 }
 .modal .close:not(:disabled):not(.disabled):hover, .modal .close:not(:disabled):not(.disabled):focus {
   opacity: inherit;
+}
+
+.modal-dialog-scrollable .modal-content {
+  overflow: initial;
+}
+.modal-dialog-scrollable .modal-content .modal-body {
+  position: static;
 }
 
 .layout.fullscreen {

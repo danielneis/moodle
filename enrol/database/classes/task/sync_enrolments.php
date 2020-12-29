@@ -59,5 +59,6 @@ class sync_enrolments extends \core\task\scheduled_task {
         // Update enrolments -- these handlers should autocreate courses if required.
         $enrol->sync_courses($trace);
         $enrol->sync_enrolments($trace);
+        $enrol->sync_groups($trace);
     }
 }

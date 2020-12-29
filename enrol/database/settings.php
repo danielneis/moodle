@@ -102,7 +102,112 @@ if ($ADMIN->fulltree) {
     $settings->add(new admin_setting_configselect('enrol_database/unenrolaction', get_string('extremovedaction', 'enrol'), get_string('extremovedaction_help', 'enrol'), ENROL_EXT_REMOVED_UNENROL, $options));
 
 
+    // Settings relating to group synchronisation.
+    // This includes:
+    // - groupstable - the name of the table that describes the groups to create
+    // -- groupscourseidnumber - the course idnumber which owns a group
+    // -- groupsgroupidnumber - the idnumber for this group (unique within the course)
+    // -- groupsname - the name of the group
+    // -- removegroupsaction - how to handle group removal
+    // - groupmemberstable - the name of the table that describes the mapping of users to groups
+    // -- groupmemberscourseidnumber - the course idnumber which owns a group
+    // -- groupmembersgroupidnumber - the idnumber for this group (unique within the course)
+    // -- groupmembersuseridnumber - the idnumber of the user to put into this group
+    $settings->add(
+        new admin_setting_heading(
+            'enrol_database_groupsync',
+            get_string('settingsheadergroupsync', 'enrol_database'),
+            get_string('settingsheadergroupsync_desc', 'enrol_database')
+        )
+    );
 
+    $settings->add(
+        new admin_setting_configtext(
+            'enrol_database/remotegroupstable',
+            get_string('remotegroupstable', 'enrol_database'),
+            get_string('remotegroupstable_desc', 'enrol_database'),
+            ''
+        )
+    );
+
+    $settings->add(
+        new admin_setting_configtext(
+            'enrol_database/groupscourseidnumber',
+            get_string('groupscourseidnumber', 'enrol_database'),
+            get_string('groupscourseidnumber_desc', 'enrol_database'),
+            'courseidnumber'
+        )
+    );
+
+    $settings->add(
+        new admin_setting_configtext(
+            'enrol_database/groupsgroupidnumber',
+            get_string('groupsgroupidnumber', 'enrol_database'),
+            get_string('groupsgroupidnumber_desc', 'enrol_database'),
+            'groupidnumber'
+        )
+    );
+
+    $settings->add(
+        new admin_setting_configtext(
+            'enrol_database/groupsgroupname',
+            get_string('groupsgroupname', 'enrol_database'),
+            get_string('groupsgroupname_desc', 'enrol_database'),
+            'groupname'
+        )
+    );
+
+    $settings->add(
+        new admin_setting_configselect(
+            'enrol_database/removegroupsaction',
+            get_string('removegroupsaction', 'enrol_database'),
+            get_string('removegroupsaction_desc', 'enrol_database'),
+            // 1 = Keep unused groups.
+            1,
+            [
+                0 => get_string('removegroupsaction_remove', 'enrol_database'),
+                1 => get_string('removegroupsaction_keep', 'enrol_database'),
+            ]
+        )
+    );
+
+    $settings->add(
+        new admin_setting_configtext(
+            'enrol_database/remotegroupmemberstable',
+            get_string('remotegroupmemberstable', 'enrol_database'),
+            get_string('remotegroupmemberstable_desc', 'enrol_database'),
+            ''
+        )
+    );
+
+    $settings->add(
+        new admin_setting_configtext(
+            'enrol_database/groupmemberscourseidnumber',
+            get_string('groupmemberscourseidnumber', 'enrol_database'),
+            get_string('groupmemberscourseidnumber_desc', 'enrol_database'),
+            'courseidnumber'
+        )
+    );
+
+    $settings->add(
+        new admin_setting_configtext(
+            'enrol_database/groupmembersgroupidnumber',
+            get_string('groupmembersgroupidnumber', 'enrol_database'),
+            get_string('groupmembersgroupidnumber_desc', 'enrol_database'),
+            'groupidnumber'
+        )
+    );
+
+    $settings->add(
+        new admin_setting_configtext(
+            'enrol_database/groupmembersuseridnumber',
+            get_string('groupmembersuseridnumber', 'enrol_database'),
+            get_string('groupmembersuseridnumber_desc', 'enrol_database'),
+            'useridnumber'
+        )
+    );
+
+    // Course creation.
     $settings->add(new admin_setting_heading('enrol_database_newcoursesheader', get_string('settingsheadernewcourses', 'enrol_database'), ''));
 
     $settings->add(new admin_setting_configtext('enrol_database/newcoursetable', get_string('newcoursetable', 'enrol_database'), get_string('newcoursetable_desc', 'enrol_database'), ''));

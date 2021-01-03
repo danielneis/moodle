@@ -125,12 +125,6 @@ class enrol_database_testcase extends advanced_testcase {
             $dbman->drop_table($table);
         }
 
-        $table = new xmldb_table('enrol_database_test_groups');
-        if ($dbman->table_exists($table)) {
-            $dbman->drop_table($table);
-        }
-
-        // Restore the error log.
         ini_set('error_log', $this->oldlog);
         $this->oldlog = null;
     }
@@ -292,81 +286,6 @@ EOF;
         }
     }
 
-    public function setup_group_tables() {
-        global $CFG, $DB;
-        $dbman = $DB->get_manager();
-
-        $this->resetAfterTest(true);
-
-        $plugin = enrol_get_plugin('database');
-
-        $table = new xmldb_table('enrol_database_test_groups');
-        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
-        $table->add_field('name', XMLDB_TYPE_CHAR, '255', null, null, null);
-        $table->add_field('courseidnumber', XMLDB_TYPE_CHAR, '255', null, null, null);
-        $table->add_field('groupidnumber', XMLDB_TYPE_CHAR, '255', null, null, null);
-        $table->add_key('primary', XMLDB_KEY_PRIMARY, array('id'));
-        if ($dbman->table_exists($table)) {
-            $dbman->drop_table($table);
-        }
-        $dbman->create_table($table);
-        set_config('remotegroupstable', "{$CFG->prefix}enrol_database_test_groups", 'enrol_database');
-        set_config('groupscourseidnumber', 'courseidnumber', 'enrol_database');
-        set_config('groupsgroupidnumber', 'groupidnumber', 'enrol_database');
-        set_config('groupsname', 'name', 'enrol_database');
-    }
-
-    public function test_sync_groups(): void {
-        global $DB;
-
-        $this->preventResetByRollback();
-        $this->resetAfterTest(true);
-
-        $this->setup_base_db_settings();
-
-        // Create test tables.
-        $remotecourses = $this->create_sample_courses(5);
-        $remoteusermap = $this->create_sample_users($remotecourses, 100);
-        $remotegroups = $this->create_sample_groups($remotecourses, 5);
-        //$remotegroupmembers = $this->create_sample_group_members($remotecourses, $remotegroups, $remoteusers, 20);
-
-        $trace = new null_progress_trace();
-        $plugin = enrol_get_plugin('database');
-        $plugin->sync_courses($trace);
-        $plugin->sync_enrolments($trace);
-
-        $plugin->sync_groups($trace);
-
-        // There should be no groups without an idnumber.
-        $this->assertCount(0, $DB->get_records('groups', ['idnumber' => '']));
-
-        // The number of courses with a group should match the number in the remote system.
-        $this->assertCount(
-            count($remotegroups),
-            $DB->get_records_sql('SELECT DISTINCT courseid FROM {groups}')
-        );
-
-        foreach ($remotegroups as $courseidnumber => $groups) {
-            $localcourse = $DB->get_record('course', ['idnumber' => $courseidnumber]);
-            $localgroups = $DB->get_records('groups', ['courseid' => $localcourse->id]);
-
-            // The number of groups should match the remote groups.
-            $this->assertCount(
-                count($groups),
-                $localgroups
-            );
-
-            // The pertinent data in each group should match.
-            foreach ($localgroups as $localgroup) {
-                $this->assertArrayHasKey($localgroup->idnumber, $groups);
-                $remotegroup = $groups[$localgroup->idnumber];
-                $this->assertEquals($remotegroup->name, $localgroup->name);
-
-                // The group membership should match.
-            }
-        }
-    }
-
     /**
      * Create a set of sample courses.
      *
@@ -437,43 +356,12 @@ EOF;
     }
 
     /**
-     * Create a set of sample groups in the specified courses.
+     * Create a set of sample courses in the specified courses.
      *
      * @param   array $courses
      * @param   int $countpercourse
      * @return  array
      */
-    protected function create_sample_groups(array $courses, int $countpercourse = 5): array {
-        global $DB;
-
-        $this->resetAfterTest(true);
-
-        // Create test tables.
-        $this->setup_group_tables();
-
-        // Create groups in each course.
-        $coursegroups = [];
-        foreach ($courses as $course) {
-            for ($i = 1; $i <= $countpercourse; $i++) {
-                $DB->insert_record('enrol_database_test_groups', [
-                    'name' => "Course {$course->shortname} / Group {$i}",
-                    'courseidnumber' => $course->idnumber,
-                    'groupidnumber' => "remotegroup_{$i}",
-                ]);
-            }
-            $coursegroups[$course->idnumber] = $DB->get_records(
-                'enrol_database_test_groups',
-                [
-                    'courseidnumber' => $course->idnumber,
-                ],
-                '',
-                'groupidnumber AS uuid, *'
-            );
-        }
-
-        return $coursegroups;
-    }
-
     protected function create_local_courses(int $count): array {
         $courses = [];
         for ($i = 1; $i <= $count; $i++) {

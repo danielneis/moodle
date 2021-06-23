@@ -46,6 +46,7 @@ $changeidnumber = has_capability('moodle/course:changeidnumber', $context);
 // Make sure all groups are OK and belong to course
 $groupidarray = explode(',',$groupids);
 $groupnames = array();
+$groups = [];
 foreach($groupidarray as $groupid) {
     if (!$group = $DB->get_record('groups', array('id' => $groupid))) {
         print_error('invalidgroupid');
@@ -57,9 +58,10 @@ foreach($groupidarray as $groupid) {
         print_error('groupunknown', '', '', $group->courseid);
     }
     $groupnames[] = format_string($group->name);
+    $groups[] = $group;
 }
 
-$returnurl='index.php?id='.$course->id;
+$returnurl = new moodle_url('/group/index.php', array('id' => $course->id));
 
 if(count($groupidarray)==0) {
     print_error('errorselectsome','group',$returnurl);
@@ -70,8 +72,13 @@ if ($confirm && data_submitted()) {
         print_error('confirmsesskeybad','error',$returnurl);
     }
 
-    foreach($groupidarray as $groupid) {
-        groups_delete_group($groupid);
+    foreach ($groups as $group) {
+        if (!groups_delete_group_allowed($group)) {
+            throw new moodle_exception(get_string('errorremovegroupnotpermitted', 'group', $group->name));
+        }
+        if (!groups_delete_group($group)) {
+            throw new moodle_exception(get_string('errorremovegroup', 'group', $group->name));
+        }
     }
 
     redirect($returnurl);

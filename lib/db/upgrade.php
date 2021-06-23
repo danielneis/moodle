@@ -2675,5 +2675,29 @@ function xmldb_main_upgrade($oldversion) {
         upgrade_main_savepoint(true, 2021060900.00);
     }
 
+    if ($oldversion < 2021070100.00) {
+
+        $table = new xmldb_table('groups');
+
+        // Define field component to be added to groups table.
+        $field = new xmldb_field('component', XMLDB_TYPE_CHAR, '100', null, XMLDB_NOTNULL, null, null, 'picture');
+
+        // Conditionally launch add field component.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Define field itemid to be added to groups table.
+        $field = new xmldb_field('itemid', XMLDB_TYPE_INTEGER, '10', null, null, null, null, 'component');
+
+        // Conditionally launch add field itemid.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Main savepoint reached.
+        upgrade_main_savepoint(true, 2021070100.00);
+    }
+
     return true;
 }

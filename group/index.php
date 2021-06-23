@@ -178,6 +178,7 @@ echo $OUTPUT->heading(format_string($course->shortname, true, array('context' =>
 $groups = groups_get_all_groups($courseid);
 $selectedname = null;
 $preventgroupremoval = array();
+$preventgroupmemberremoval = array();
 
 // Get list of groups to render.
 $groupoptions = array();
@@ -195,6 +196,15 @@ if ($groups) {
         }
         if (!empty($group->idnumber) && !has_capability('moodle/course:changeidnumber', $context)) {
             $preventgroupremoval[$group->id] = true;
+        }
+        if (!groups_delete_group_allowed($group)) {
+            $preventgroupremoval[$group->id] = true;
+        }
+        if (!groups_remove_members_allowed($group)) {
+            $preventgroupmemberremoval[$group->id] = true;
+        }
+        if (!empty($group->component)) {
+            $groupname .= ' ' . get_string('groupcreatedby', 'group', get_string('pluginname', $group->component));
         }
 
         $groupoptions[] = (object) [
@@ -247,7 +257,7 @@ if ($singlegroup) {
 $disableaddedit = !$singlegroup;
 $disabledelete = !empty($groupids);
 $renderable = new \core_group\output\index_page($courseid, $groupoptions, $selectedname, $members, $disableaddedit, $disabledelete,
-        $preventgroupremoval);
+        $preventgroupremoval, $preventgroupmemberremoval);
 $output = $PAGE->get_renderer('core_group');
 echo $output->render($renderable);
 

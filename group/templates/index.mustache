@@ -87,7 +87,13 @@
                     </label>
                     <select name="groups[]" multiple="multiple" id="groups" size="15" class="form-control input-block-level">
                         {{#groups}}
-                            <option value="{{value}}" {{#selected}}selected="selected"{{/selected}} title="{{{text}}}">{{{text}}}</option>
+                            <option {{!
+                            }} value="{{value}}" {{!
+                            }}{{#selected}} selected="selected"{{/selected}}{{!
+                            }} title="{{{text}}}"{{!
+                            }} data-is-deletable="{{deletable}}"{{!
+                            }} data-is-editable="{{editable}}"{{!
+                            }}>{{{text}}}</option>
                         {{/groups}}
                     </select>
                 </div>
@@ -134,12 +140,14 @@
     </div>
 </form>
 {{#js}}
+require(['core_group/managegrouplist'], function(manageGroups) {
+    manageGroups.init('#groups', '#deletegroup', '#showaddmembersform');
+});
+
     require(['jquery', 'core/yui'], function($) {
         $("#groups").change(function() {
             M.core_group.membersCombo.refreshMembers();
         });
         M.core_group.init_index(Y, "{{wwwroot}}", {{courseid}});
-        var undeletableGroups = JSON.parse('{{{undeletablegroups}}}');
-        M.core_group.groupslist(Y, undeletableGroups);
     });
 {{/js}}

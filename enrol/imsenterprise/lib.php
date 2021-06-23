@@ -992,3 +992,14 @@ class enrol_imsenterprise_plugin extends enrol_plugin {
         return has_capability('enrol/imsenterprise:config', $context);
     }
 }
+
+/**
+ * Prevent removal of groups.
+ *
+ * @param int $itemid  The id of the enrol instance.
+ * @param int $groupid The id of the group that is being checked for deletion.
+ * @return bool Always false.
+ */
+function enrol_imsenterprise_allow_group_delete(int $itemid, int $groupid): bool {
+    return false;
+}

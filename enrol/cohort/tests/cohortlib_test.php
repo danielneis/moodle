@@ -59,6 +59,8 @@ class enrol_cohort_lib_testcase extends advanced_testcase {
         $this->assertEquals($cohort->name . ' cohort', $group->name);
         // Group course id should match the course id.
         $this->assertEquals($course->id, $group->courseid);
+        // The component should match enrol_cohort.
+        $this->assertEquals('enrol_cohort', $group->component);
 
         // Create a group that will have the same name as the cohort.
         $groupdata = new stdClass();

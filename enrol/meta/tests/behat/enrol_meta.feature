@@ -77,7 +77,7 @@ Feature: Enrolments are synchronised with meta courses
     And I should see "Course 1 course" in the "Student 3" "table_row"
     And I should see "Course 1 course" in the "Student 4" "table_row"
     And I navigate to "Users > Groups" in current page administration
-    And the "Groups" select box should contain "Course 1 course (4)"
+    And the "Groups" select box should contain "Course 1 course (4) (group created by 'Course meta link' component)"
 
   Scenario: Backup and restore of meta enrolment instance
     When I am on "Course 3" course homepage

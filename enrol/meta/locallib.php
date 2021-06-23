@@ -659,7 +659,7 @@ function enrol_meta_create_new_group($courseid, $linkedcourseid) {
     $groupdata = new stdClass();
     $groupdata->courseid = $courseid;
     $groupdata->name = $groupname;
-    $groupid = groups_create_group($groupdata);
+    $groupid = groups_create_group($groupdata, false, false, 'enrol_meta', null);
 
     return $groupid;
 }

@@ -463,3 +463,24 @@ class enrol_meta_plugin extends enrol_plugin {
     }
 
 }
+
+/**
+ * Prevent removal of groups members.
+ *
+ * @param stdClass $group The group object that is being checked for members removal.
+ * @return bool Always false.
+ */
+function enrol_meta_allow_group_members_remove(stdClass $group): bool {
+    return false;
+}
+
+/**
+ * Prevent removal of groups.
+ *
+ * @param int|null $itemid  The id of the enrol instance.
+ * @param int $groupid The id of the group that is being checked for deletion.
+ * @return bool Always false.
+ */
+function enrol_meta_allow_group_delete(?int $itemid, int $groupid): bool {
+    return false;
+}

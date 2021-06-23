@@ -753,6 +753,8 @@ final class plugin_test extends \advanced_testcase {
         $this->assertEquals('Mathematics course', $group->name);
         // Group course id should match the course id.
         $this->assertEquals($metacourse->id, $group->courseid);
+        // The component should match enrol_meta.
+        $this->assertEquals('enrol_meta', $group->component);
 
         // Create a group that will have the same name as the course.
         $groupdata = new \stdClass();

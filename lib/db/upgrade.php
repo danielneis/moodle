@@ -1632,7 +1632,7 @@ function xmldb_main_upgrade($oldversion) {
         upgrade_main_savepoint(true, 2025031800.04);
     }
 
-    if ($oldversion < 2021070100.00) {
+    if ($oldversion < 2025032100.01) {
 
         $table = new xmldb_table('groups');
 
@@ -1653,7 +1653,7 @@ function xmldb_main_upgrade($oldversion) {
         }
 
         // Main savepoint reached.
-        upgrade_main_savepoint(true, 2021070100.00);
+        upgrade_main_savepoint(true, 2025032100.01);
     }
 
     return true;

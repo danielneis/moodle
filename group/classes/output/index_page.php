@@ -62,6 +62,9 @@ class index_page implements renderable, templatable {
     /** @var bool Whether to show/hide the messaging setting buttons. */
     public $messagingsettingsvisible;
 
+    /** @var array Groups that members can't be edited by the user. */
+    public $uneditablemembersgroups;
+
     /**
      * index_page constructor.
      *
@@ -72,10 +75,11 @@ class index_page implements renderable, templatable {
      * @param bool $disableaddedit Whether to disable the add members/edit group buttons.
      * @param bool $disabledelete Whether to disable the delete group button.
      * @param array $undeletablegroups Groups that can't be deleted by the user.
+     * @param array $uneditablemembersgroups Groups that can't be edited by the user.
      * @param bool $messagingsettingsvisible If the messaging settings buttons should be visible.
      */
     public function __construct($courseid, $groups, $selectedgroupname, $selectedgroupmembers, $disableaddedit, $disabledelete,
-                                $undeletablegroups, $messagingsettingsvisible) {
+                                $undeletablegroups, $messagingsettingsvisible, $uneditablemembersgroups) {
         $this->courseid = $courseid;
         $this->groups = $groups;
         $this->selectedgroupname = $selectedgroupname;
@@ -84,6 +88,26 @@ class index_page implements renderable, templatable {
         $this->disabledelete = $disabledelete;
         $this->undeletablegroups = $undeletablegroups;
         $this->messagingsettingsvisible = $messagingsettingsvisible;
+        $this->uneditablemembersgroups = $uneditablemembersgroups;
+    }
+
+    /**
+     * This adds deletable and editable info to groups.
+     *
+     * @return array The groups array with deletable and editable attributes added to each group.
+     */
+    protected function get_group_data(): array {
+        return array_map(function($groupdata) {
+            $groupdata->deletable = '1';
+            $groupdata->editable = '1';
+            if (array_key_exists($groupdata->value, $this->undeletablegroups)) {
+                $groupdata->deletable = '0';
+            }
+            if (array_key_exists($groupdata->value, $this->uneditablemembersgroups)) {
+                $groupdata->editable = '0';
+            }
+            return $groupdata;
+        }, $this->groups);
     }
 
     /**
@@ -100,14 +124,12 @@ class index_page implements renderable, templatable {
         // Variables that will be passed to the JS helper.
         $data->courseid = $this->courseid;
         $data->wwwroot = $CFG->wwwroot;
-        // To be passed to the JS init script in the template. Encode as a JSON string.
-        $data->undeletablegroups = json_encode($this->undeletablegroups);
 
         // Some buttons are enabled if single group selected.
         $data->addmembersdisabled = $this->disableaddedit;
         $data->editgroupsettingsdisabled = $this->disableaddedit;
         $data->deletegroupdisabled = $this->disabledelete;
-        $data->groups = $this->groups;
+        $data->groups = $this->get_group_data();
         $data->members = $this->selectedgroupmembers;
         $data->selectedgroup = $this->selectedgroupname;
         $data->messagingsettingsvisible = $this->messagingsettingsvisible;

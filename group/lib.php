@@ -14,7 +14,6 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-
 /**
  * Extra library for groups and groupings.
  *
@@ -186,6 +185,23 @@ function groups_remove_member_allowed($grouporid, $userorid) {
 }
 
 /**
+ * Checks whether the current user is permitted (using the normal UI) to
+ * remove any group member.
+ *
+ * This checks with the relevant plugin to see whether it is permitted.
+ * The default, if the plugin doesn't provide a function, is true.
+ *
+ * @param stdClass $group The group object
+ * @return bool True if permitted, false otherwise
+ */
+function groups_remove_members_allowed(stdClass $group): bool {
+    if (empty($gruop->component)) {
+        return true;
+    }
+    return component_callback($group->component, 'allow_group_members_remove', [$group], true);
+}
+
+/**
  * Deletes the link between the specified user and group.
  *
  * @param mixed $grouporid  The group id or group object
@@ -255,10 +271,12 @@ function groups_remove_member($grouporid, $userorid) {
  * @param stdClass $data group properties
  * @param stdClass $editform
  * @param array $editoroptions
+ * @param string $component Optional component name e.g. 'enrol_imsenterprise',
+ * @param int $itemid Optional itemid associated with component.
  * @return int id of group or throws an exception on error
  * @throws moodle_exception
  */
-function groups_create_group($data, $editform = false, $editoroptions = false) {
+function groups_create_group($data, $editform = false, $editoroptions = false, ?string $component = null, ?int $itemid = null) {
     global $CFG, $DB, $USER;
 
     //check that courseid exists
@@ -273,6 +291,23 @@ function groups_create_group($data, $editform = false, $editoroptions = false) {
         if (groups_get_group_by_idnumber($course->id, $data->idnumber)) {
             throw new moodle_exception('idnumbertaken');
         }
+    }
+    $data->component = '';
+    $data->itemid = 0;
+    // Check the component exists if specified.
+    if (!empty($component)) {
+        if (core_component::get_component_directory($component)) {
+            // Component exists and can be used.
+            $data->component = $component;
+            $data->itemid = $itemid;
+        } else {
+            throw new coding_exception('Invalid call to groups_create_group(). An invalid component was specified');
+        }
+    }
+
+    if (!is_null($itemid) && empty($data->component)) {
+        // An itemid can only be specified if a valid component was found.
+        throw new coding_exception('Invalid call to groups_create_group(). A component must be specified if an itemid is given');
     }
 
     $data->visibility ??= GROUPS_VISIBILITY_ALL;
@@ -331,7 +366,11 @@ function groups_create_group($data, $editform = false, $editoroptions = false) {
     // Trigger group event.
     $params = array(
         'context' => $context,
-        'objectid' => $group->id
+        'objectid' => $group->id,
+        'other' => array(
+            'component' => $data->component,
+            'itemid' => $data->itemid
+        )
     );
     $event = \core\event\group_created::create($params);
     $event->add_record_snapshot('groups', $group);
@@ -579,6 +618,25 @@ function groups_update_grouping($data, $editoroptions=null) {
     $event->trigger();
 
     return true;
+}
+
+/**
+ * Checks whether the current user is permitted (using the normal UI) to remove a specific group.
+ *
+ * For automatically-created group member entries, this checks with the
+ * relevant plugin to see whether it is permitted. The default, if the plugin
+ * doesn't provide a function, is true.
+ *
+ * @param stdClass $group The group object to check.
+ * @return bool True if permitted, false otherwise.
+ */
+function groups_delete_group_allowed(\stdClass $group): bool {
+    global $USER;
+    if (empty($group->component)) {
+        return true;
+    }
+    // It has a component value, so we need to call a plugin function (if it exists); the default is to allow removal.
+    return component_callback($group->component, 'allow_group_delete', [$group->itemid, $group->id], true);
 }
 
 /**

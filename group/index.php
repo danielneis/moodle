@@ -187,6 +187,7 @@ echo $OUTPUT->render_participants_tertiary_nav($course);
 $groups = groups_get_all_groups($courseid);
 $selectedname = null;
 $preventgroupremoval = array();
+$preventgroupmemberremoval = array();
 
 // Get list of groups to render.
 $groupoptions = array();
@@ -204,6 +205,15 @@ if ($groups) {
         }
         if (!empty($group->idnumber) && !has_capability('moodle/course:changeidnumber', $context)) {
             $preventgroupremoval[$group->id] = true;
+        }
+        if (!groups_delete_group_allowed($group)) {
+            $preventgroupremoval[$group->id] = true;
+        }
+        if (!groups_remove_members_allowed($group)) {
+            $preventgroupmemberremoval[$group->id] = true;
+        }
+        if (!empty($group->component)) {
+            $groupname .= ' ' . get_string('groupcreatedby', 'group', get_string('pluginname', $group->component));
         }
 
         $groupoptions[] = (object) [
@@ -259,7 +269,7 @@ $disabledelete = !empty($groupids);
 $caneditmessaging = \core_message\api::can_create_group_conversation($USER->id, $context);
 
 $renderable = new \core_group\output\index_page($courseid, $groupoptions, $selectedname, $members, $disableaddedit, $disabledelete,
-        $preventgroupremoval, $caneditmessaging);
+        $preventgroupremoval, $caneditmessaging, $preventgroupmemberremoval);
 $output = $PAGE->get_renderer('core_group');
 echo $output->render($renderable);
 

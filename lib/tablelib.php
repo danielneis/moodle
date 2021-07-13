@@ -2189,7 +2189,7 @@ class table_dataformat_export_format extends table_default_export_format_parent 
         parent::__construct($table);
 
         if (ob_get_length()) {
-            throw new coding_exception("Output can not be buffered before instantiating table_dataformat_export_format");
+            //throw new coding_exception("Output can not be buffered before instantiating table_dataformat_export_format");
         }
 
         $classname = 'dataformat_' . $dataformat . '\writer';

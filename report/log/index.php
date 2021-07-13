@@ -186,6 +186,7 @@ if (empty($readers)) {
             echo $output->render($reportlog);
         } else {
             \core\session\manager::write_close();
+	    ob_clean();
             $reportlog->download();
             exit();
         }

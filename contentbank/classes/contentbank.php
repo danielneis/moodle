@@ -211,9 +211,73 @@ class contentbank {
         if (!empty($search)) {
             $sql .= ' AND ' . $DB->sql_like('name', ':name', false, false);
             $params['name'] = '%' . $DB->sql_like_escape($search) . '%';
+
+            $fields = \core_contentbank\customfield\content_handler::create()->get_fields();
+            if (!$fields) {
+                $fields = array();
+            }
+            list($fieldsql1, $fieldparam1) = $DB->get_in_or_equal(array_keys($fields), SQL_PARAMS_NAMED, 'fld1', true, 0);
+
+            $sql .= ' OR EXISTS (SELECT 1
+                                   FROM {customfield_data} cfd
+                                  WHERE cfd.contextid = c.contextid
+                                    AND ' . $DB->sql_like('cfd.value', ':cfdvalue', false, false) .
+                                  ' AND cfd.fieldid ' . $fieldsql1 .
+                                  ' AND cfd.instanceid = c.id ' .
+                                '))';
+            $params['cfdvalue'] = '%' . $DB->sql_like_escape($search) . '%';
+
+            $params = array_merge($params, $fieldparam1);
+
+            list($fieldsql2, $param2) = $DB->get_in_or_equal(array_keys($fields), SQL_PARAMS_NAMED, 'fld2', true, 0);
+            $param2['selectfieldval'] = '%' . $search . '%';
+
+            $searchselect = "CONVERT(SUBSTRING_INDEX( 
+                                             SUBSTRING_INDEX(
+                                              SUBSTR(cf.configdata,
+                                                     LOCATE('options', cf.configdata) + 10,
+                                                     LOCATE('defaultvalue', cf.configdata) - LOCATE('options', cf.configdata) - 13),
+                                              '\\\\r\\\\n', cfd.intvalue ),
+                                            '\\\\r\\\\n', -1) USING 'latin1')";
+
+            $sql2 = "select c.*
+                       from {contentbank_content} c
+                      WHERE c.deleted = 0
+                        AND EXISTS(
+                                SELECT 1
+                                  FROM {customfield_field} cf
+                                  JOIN {customfield_data} cfd 
+                                    ON cfd.fieldid = cf.id
+                                 WHERE c.id = cfd.instanceid
+                                   AND c.contextid = cfd.contextid
+                                   AND cf.id {$fieldsql2}
+                                   AND " . $DB->sql_like($searchselect, ':selectfieldval', false, false) .
+                          ')';
+            $records2 = $DB->get_records_sql($sql2, $param2);
+
+            foreach ($records2 as $record) {
+                $content = $this->get_content_from_id($record->id);
+                if ($content->is_view_allowed()) {
+                    $contents[] = $content;
+                }
+            }
         }
 
-        $records = $DB->get_records_select('contentbank_content', $sql, $params, 'name ASC');
+        if ($deleted) {
+            $sql .= ' AND c.deleted = 1';
+        } else {
+            $sql .= ' AND c.deleted = 0';
+        }
+
+        $fullsql = "SELECT c.*
+                      FROM {contentbank_content} c
+                      JOIN {contentbank_folders} f
+                        ON f.id = c.folderid
+                     WHERE {$sql}
+                     ORDER BY name ASC";
+
+        $records = $DB->get_records_sql($fullsql, $params);
+
         foreach ($records as $record) {
             $content = $this->get_content_from_id($record->id);
             if ($content->is_view_allowed()) {

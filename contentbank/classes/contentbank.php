@@ -204,16 +204,38 @@ class contentbank {
         // Filter contents on this context (if defined).
         if (!empty($contextid)) {
             $params['contextid'] = $contextid;
-            $sql .= ' AND contextid = :contextid ';
+            $sql .= ' AND c.contextid = :contextid ';
         }
 
         // Search for contents having this string (if defined).
         if (!empty($search)) {
-            $sql .= ' AND ' . $DB->sql_like('name', ':name', false, false);
+            $sql .= ' AND (' . $DB->sql_like('name', ':name', false, false);
             $params['name'] = '%' . $DB->sql_like_escape($search) . '%';
+
+            $fields = \contenttype_document\customfield\document_handler::create()->get_fields();
+            if (!$fields) {
+                $fields = array();
+            }
+            list($fieldsql, $fieldparam) = $DB->get_in_or_equal(array_keys($fields), SQL_PARAMS_NAMED, 'fld', true, 0);
+
+            $sql .= ' OR EXISTS (SELECT 1
+                                   FROM {customfield_data} cfd
+                                  WHERE cfd.contextid = c.contextid
+                                    AND ' . $DB->sql_like('cfd.value', ':cfdvalue', false, false) .
+                                  ' AND cfd.fieldid ' . $fieldsql .
+                                  ' AND cfd.instanceid = c.id ' .
+                                '))';
+            $params['cfdvalue'] = '%' . $DB->sql_like_escape($search) . '%';
+
+            $params = array_merge($params, $fieldparam);
         }
 
-        $records = $DB->get_records_select('contentbank_content', $sql, $params, 'name ASC');
+        $fullsql = 'SELECT c.*
+                      FROM {contentbank_content} c
+                     WHERE ' . $sql .
+                   ' ORDER BY name ASC';
+
+        $records = $DB->get_records_sql($fullsql, $params);
         foreach ($records as $record) {
             $content = $this->get_content_from_id($record->id);
             if ($content->is_view_allowed()) {

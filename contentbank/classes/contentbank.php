@@ -179,7 +179,8 @@ class contentbank {
      * @param  array $contenttypenames Optional array with the list of content-type names to search.
      * @return array The contents for the enabled contentbank-type plugins having $search as name and placed in $contextid.
      */
-    public function search_contents(?string $search = null, ?int $contextid = 0, ?array $contenttypenames = null): array {
+    public function search_contents(?string $search = null, ?int $contextid = 0,
+        ?array $contenttypenames = null, ?int $parentid = 0): array {
         global $DB;
 
         $contents = [];
@@ -205,6 +206,11 @@ class contentbank {
         if (!empty($contextid)) {
             $params['contextid'] = $contextid;
             $sql .= ' AND c.contextid = :contextid ';
+        }
+
+        if (!empty($parentid)) {
+            $params['parentid'] = $parentid;
+            $sql .= ' AND parent = :parentid ';
         }
 
         // Search for contents having this string (if defined).
@@ -374,5 +380,18 @@ class contentbank {
      */
     public function is_context_allowed(context $context): bool {
         return in_array($context->contextlevel, self::ALLOWED_CONTEXT_LEVELS);
+    }
+
+    /** Function to get all the folders in a parent folder.
+     *
+     * @param int $parentid     Parent folder where to look for folders.
+     * @return array
+     * @throws \dml_exception
+     */
+    public static function get_folders_in_parent(int $parentid): array {
+        global $DB;
+
+        $folders = $DB->get_records('contentbank_folders', ['parent' => $parentid]);
+        return $folders;
     }
 }

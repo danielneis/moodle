@@ -2721,6 +2721,14 @@ $functions = array(
         'capabilities'  => '',
         'services'      => [MOODLE_OFFICIAL_MOBILE_SERVICE],
     ],
+    'core_contentbank_create_folder' => [
+        'classname'     => 'core_contentbank\external\create_folder',
+        'classpath'     => '',
+        'description'   => 'Create a new folder in the content bank.',
+        'type'          => 'write',
+        'ajax'          => 'true',
+        'capabilities'  => 'moodle/contentbank:createfolder',
+    ],
     'core_contentbank_delete_content' => [
         'classname'     => 'core_contentbank\external\delete_content',
         'classpath'     => '',

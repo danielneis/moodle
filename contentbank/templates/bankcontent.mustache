@@ -19,6 +19,13 @@
 
     Example context (json):
     {
+        "root": "http://something/contentbank/index.php",
+        "breadcrumb": [
+            {
+                "name": "First level",
+                "link": "http://something/contentbank/index.php?parent=1"
+            }
+        ],
         "contents": [
             {
                 "name": "Accordion.h5p",
@@ -93,7 +100,10 @@ data-region="contentbank">
         <div class="content-bank">
             <div class="cb-navbar bg-light p-2 border-bottom">
                 <div class="cb-navbar-breadbrumb">
-                    {{#pix}} i/folder {{/pix}}
+                    <a href="{{{ root }}}" title="/">{{#pix}} i/folder {{/pix}}</a>
+                    {{#breadcrumb}}
+                        / <a href="{{{ link }}}">{{{ name }}}</a>
+                    {{/breadcrumb}}
                 </div>
                 <div class="cb-navbar-totalsearch d-none">
                 </div>

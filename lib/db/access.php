@@ -2515,6 +2515,16 @@ $capabilities = array(
         )
     ),
 
+    'moodle/contentbank:createfolder' => [
+        'riskbitmask' => RISK_SPAM,
+        'captype' => 'write',
+        'contextlevel' => CONTEXT_SYSTEM,
+        'archetypes' => [
+            'manager' => CAP_ALLOW,
+            'coursecreator' => CAP_ALLOW,
+        ]
+    ],
+
     // Delete any content from the content bank.
     'moodle/contentbank:deleteanycontent' => [
         'riskbitmask' => RISK_DATALOSS,

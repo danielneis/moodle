@@ -37,6 +37,11 @@ class upload_files extends \core_form\dynamic_form {
         $mform->addElement('hidden', 'id');
         $mform->setType('id', PARAM_INT);
 
+        $parent = $this->_customdata['parent'];
+
+        $mform->addElement('hidden', 'parent', $parent);
+        $mform->setType('parent', PARAM_INT);
+
         $mform->addElement('filepicker', 'file', get_string('file', 'core_contentbank'), null, $this->get_options());
         $mform->addHelpButton('file', 'file', 'core_contentbank');
         $mform->addRule('file', null, 'required');

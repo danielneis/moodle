@@ -54,16 +54,34 @@ class bankcontent implements renderable, templatable {
     private $context;
 
     /**
+     * @var string    Path of the folder.
+     */
+    private $path = '/';
+
+    /**
+     * @var \core_contentbank\folder[]    Array of folders.
+     */
+    private $folders;
+
+    /**
      * Construct this renderable.
      *
      * @param \core_contentbank\content[] $contents   Array of content bank contents.
      * @param array $toolbar     List of content bank toolbar options.
      * @param \context $context Optional context to check (default null)
+     * @param int $parentid   Current folder id.
+     * @param \core_contentbank\folder[] $folders   Array of folders.
      */
-    public function __construct(array $contents, array $toolbar, \context $context = null) {
+    public function __construct(array $contents, array $toolbar, \context $context = null, int $parentid, array $folders) {
+        global $DB;
+
+        if ($parentid) {
+            $this->path = $DB->get_field('contentbank_folders', 'path', ['id' => $parentid]);
+        }
         $this->contents = $contents;
         $this->toolbar = $toolbar;
         $this->context = $context;
+        $this->folders = $folders;
     }
 
     /**
@@ -73,13 +91,47 @@ class bankcontent implements renderable, templatable {
      * @return stdClass
      */
     public function export_for_template(renderer_base $output): stdClass {
-        global $PAGE;
+        global $DB, $PAGE;
 
         $PAGE->requires->js_call_amd('core_contentbank/search', 'init');
         $PAGE->requires->js_call_amd('core_contentbank/sort', 'init');
 
         $data = new stdClass();
-        $contentdata = array();
+
+        $url = new \moodle_url('/contentbank/index.php');
+        $data->root = $url->out();
+
+        $breadcrumb = [];
+        $levels = explode('/', $this->path);
+        foreach ($levels as $level) {
+            if ($level == '') {
+                continue;
+            }
+            if ($name = $DB->get_field('contentbank_folders', 'name', ['id' => $level])) {
+                $url->params(['parent' => $level]);
+                $breadcrumb[] = [
+                    'name' => $name,
+                    'link' => $url->out()
+                ];
+            }
+        }
+        $data->breadcrumb = $breadcrumb;
+
+        $contentdata = [];
+        foreach ($this->folders as $folder) {
+            $link = new \moodle_url('/contentbank/index.php', ['parent' => $folder->id]);
+            $contentdata[] = [
+                'name' => $folder->name,
+                'title' => strtolower($folder->name),
+                'link' => $link->out(false),
+                'icon' => \core_contentbank\folder::get_icon(),
+                'type' => get_string('folder'),
+                'size' => '-',
+                'author' => fullname(\core_user::get_user($folder->usercreated)),
+                'uses' => 0,
+            ];
+        }
+
         foreach ($this->contents as $content) {
             $file = $content->get_file();
             $filesize = $file ? $file->get_filesize() : 0;

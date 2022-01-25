@@ -37,6 +37,7 @@ if (!$cb->is_context_allowed($context)) {
 
 require_capability('moodle/contentbank:access', $context);
 
+$parentid = optional_param('parent', 0, PARAM_INT);
 $statusmsg = optional_param('statusmsg', '', PARAM_ALPHANUMEXT);
 $errormsg = optional_param('errormsg', '', PARAM_ALPHANUMEXT);
 
@@ -62,10 +63,15 @@ foreach ($enabledcontenttypes as $contenttypename) {
     }
 }
 
-$foldercontents = $cb->search_contents($search, $contextid, $contenttypes);
+$PAGE->requires->js_call_amd('core_contentbank/folders', 'init');
+
+// Get all folders in this path.
+$folders = \core_contentbank\contentbank::get_folders_in_parent($parentid);
+
+$foldercontents = $cb->search_contents($search, $contextid, $contenttypes, $parentid);
 
 // Get the toolbar ready.
-$toolbar = array ();
+$toolbar = array();
 
 // Place the Add button in the toolbar.
 if (has_capability('moodle/contentbank:useeditor', $context)) {
@@ -83,12 +89,25 @@ if (has_capability('moodle/contentbank:useeditor', $context)) {
     }
 }
 
+// Place the Create Folder button in the toolbar.
+if (has_capability('moodle/contentbank:createfolder', $context)) {
+    $actionurl = new moodle_url('#');
+
+    $toolbar[] = [
+        'name' => get_string('newfolder', 'core_contentbank'),
+        'link' => $actionurl,
+        'icon' => 'i/folder',
+        'action' => 'createfolder',
+        'extra' => 'data-parentid="'. $parentid. '"'
+    ];
+}
+
 // Place the Upload button in the toolbar.
 if (has_capability('moodle/contentbank:upload', $context)) {
     // Don' show upload button if there's no plugin to support any file extension.
     $accepted = $cb->get_supported_extensions_as_string($context);
     if (!empty($accepted)) {
-        $importurl = new moodle_url('/contentbank/index.php', ['contextid' => $contextid]);
+        $importurl = new moodle_url('/contentbank/index.php', ['contextid' => $contextid, 'parent' => $parentid]);
         $toolbar[] = [
             'name' => get_string('upload', 'contentbank'),
             'link' => $importurl->out(false),
@@ -116,7 +135,7 @@ if ($errormsg !== '' && get_string_manager()->string_exists($errormsg, 'core_con
 }
 
 // Render the contentbank contents.
-$folder = new \core_contentbank\output\bankcontent($foldercontents, $toolbar, $context);
+$folder = new \core_contentbank\output\bankcontent($foldercontents, $toolbar, $context, $parentid, $folders);
 echo $OUTPUT->render($folder);
 
 echo $OUTPUT->box_end();

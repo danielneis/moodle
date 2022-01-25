@@ -22,9 +22,13 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+$string['add'] = 'Add';
+$string['addnewfolder'] = 'Add new folder';
 $string['author'] = 'Author';
-$string['contentbank'] = 'Content bank';
 $string['choosecontext'] = 'Choose course or category...';
+$string['close'] = 'Close';
+$string['contentbank'] = 'Content bank';
+$string['createfolder'] = 'Create folder';
 $string['contentbankpreferences'] = 'Content bank preferences';
 $string['contentdeleted'] = 'The content has been deleted.';
 $string['contentname'] = 'Content name';
@@ -37,6 +41,7 @@ $string['contenttypenoedit'] = 'You can not edit this content';
 $string['contentvisibilitychanged'] = 'The content has been made {$a}.';
 $string['contentvisibilitynotset'] = 'An error was encountered while trying to set the content visibility.';
 $string['contextnotallowed'] = 'You are not allowed to access the content bank in this context.';
+$string['duplicatedfoldername'] = 'Folder name exists already';
 $string['emptynamenotallowed'] = 'Empty name is not allowed';
 $string['eventcontentcreated'] = 'Content created';
 $string['eventcontentdeleted'] = 'Content deleted';
@@ -54,10 +59,13 @@ $string['displaydetails'] = 'Display content bank with file details';
 $string['displayicons'] = 'Display content bank with icons';
 $string['file'] = 'Upload content';
 $string['file_help'] = 'Files may be stored in the content bank for use in courses. Only files used by content types enabled on the site may be uploaded.';
+$string['foldercreated'] = 'Folder created';
 $string['itemsfound'] = '{$a} items found';
 $string['lastmodified'] = 'Last modified';
 $string['more'] = 'More';
 $string['name'] = 'Content';
+$string['newfolder'] = 'New folder';
+$string['newfoldername'] = 'New folder name';
 $string['nocontentavailable'] = 'No content available';
 $string['nocontenttypes'] = 'No content types available';
 $string['notavailable'] = 'Sorry, this content is not available.';

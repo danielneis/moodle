@@ -37,10 +37,8 @@ class upload_files extends \core_form\dynamic_form {
         $mform->addElement('hidden', 'id');
         $mform->setType('id', PARAM_INT);
 
-        $parent = $this->_customdata['parent'];
-
-        $mform->addElement('hidden', 'parent', $parent);
-        $mform->setType('parent', PARAM_INT);
+        $mform->addElement('hidden', 'parentid');
+        $mform->setType('parentid', PARAM_INT);
 
         $mform->addElement('filepicker', 'file', get_string('file', 'core_contentbank'), null, $this->get_options());
         $mform->addHelpButton('file', 'file', 'core_contentbank');
@@ -162,7 +160,9 @@ class upload_files extends \core_form\dynamic_form {
                     $contenttype = $content->get_content_type_instance();
                     $content = $contenttype->replace_content($file, $content);
                 } else {
-                    $content = $cb->create_content_from_file($this->get_context_for_dynamic_submission(), $USER->id, $file);
+                    $parentid = $this->optional_param('parentid', 0, PARAM_INT);
+                    $context = $this->get_context_for_dynamic_submission();
+                    $content = $cb->create_content_from_file($context, $USER->id, $file, $parentid);
                 }
                 $params = ['id' => $content->get_id(), 'contextid' => $this->get_context_for_dynamic_submission()->id];
                 $url = new \moodle_url('/contentbank/view.php', $params);
@@ -202,6 +202,7 @@ class upload_files extends \core_form\dynamic_form {
     public function set_data_for_dynamic_submission(): void {
         $data = (object)[
             'contextid' => $this->optional_param('contextid', null, PARAM_INT),
+            'parentid' => $this->optional_param('parentid', 0, PARAM_INT),
             'id' => $this->optional_param('id', null, PARAM_INT),
         ];
         $this->set_data($data);

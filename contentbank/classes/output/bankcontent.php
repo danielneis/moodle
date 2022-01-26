@@ -91,35 +91,19 @@ class bankcontent implements renderable, templatable {
      * @return stdClass
      */
     public function export_for_template(renderer_base $output): stdClass {
-        global $DB, $PAGE;
+        global $PAGE;
 
         $PAGE->requires->js_call_amd('core_contentbank/search', 'init');
         $PAGE->requires->js_call_amd('core_contentbank/sort', 'init');
 
         $data = new stdClass();
 
-        $url = new \moodle_url('/contentbank/index.php');
+        $url = new \moodle_url('/contentbank/index.php', ['contextid' => $this->context->id]);
         $data->root = $url->out();
-
-        $breadcrumb = [];
-        $levels = explode('/', $this->path);
-        foreach ($levels as $level) {
-            if ($level == '') {
-                continue;
-            }
-            if ($name = $DB->get_field('contentbank_folders', 'name', ['id' => $level])) {
-                $url->params(['parent' => $level]);
-                $breadcrumb[] = [
-                    'name' => $name,
-                    'link' => $url->out()
-                ];
-            }
-        }
-        $data->breadcrumb = $breadcrumb;
 
         $contentdata = [];
         foreach ($this->folders as $folder) {
-            $link = new \moodle_url('/contentbank/index.php', ['parent' => $folder->id]);
+            $link = new \moodle_url('/contentbank/index.php', ['contextid' => $this->context->id, 'folderid' => $folder->id]);
             $contentdata[] = [
                 'name' => $folder->name,
                 'title' => strtolower($folder->name),

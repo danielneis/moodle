@@ -4494,7 +4494,7 @@ privatefiles,moodle|/user/files.php';
         upgrade_main_savepoint(true, 2022041900.03);
     }
 
-    if ($oldversion < 2021051705.06) {
+    if ($oldversion < 2022041900.04) {
 
         // Define table to store contentbank_folders.
         $table = new xmldb_table('contentbank_folders');
@@ -4536,7 +4536,7 @@ privatefiles,moodle|/user/files.php';
         }
 
         // Main savepoint reached.
-        upgrade_main_savepoint(true, 2021051705.06);
+        upgrade_main_savepoint(true, 2022041900.04);
     }
 
     return true;

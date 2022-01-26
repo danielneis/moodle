@@ -14,25 +14,24 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Module to handle AJAX interactions with content bank upload files.
+ * Module to manage content bank folder actions, such as create, delete or rename.
  *
- * @module     core_contentbank/upload
- * @copyright  2021 Sara Arjona <sara@moodle.com>
+ * @module     core_contentbank/create_folder
+ * @copyright  2022 Daniel Neis Araujo <danielneis@gmail.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 import ModalForm from 'core_form/modalform';
 import {get_string as getString} from 'core/str';
 
 /**
- * Initialize upload files to the content bank form as Modal form.
+ * Initialize create new folder form as Modal form.
  *
  * @param {String} elementSelector
  * @param {String} formClass
  * @param {Integer} contextId
- * @param {Integer} contentId
  * @param {Integer} parentId
  */
-export const initModal = (elementSelector, formClass, contextId, contentId, parentId) => {
+export const initModal = (elementSelector, formClass, contextId, parentId) => {
     const element = document.querySelector(elementSelector);
     element.addEventListener('click', function(e) {
         e.preventDefault();
@@ -41,9 +40,8 @@ export const initModal = (elementSelector, formClass, contextId, contentId, pare
             args: {
                 contextid: contextId,
                 parentid: parentId,
-                id: contentId,
             },
-            modalConfig: {title: getString('upload', 'contentbank')},
+            modalConfig: {title: getString('addnewfolder', 'contentbank')},
             returnFocus: e.target,
         });
         form.addEventListener(form.events.FORM_SUBMITTED, (event) => {

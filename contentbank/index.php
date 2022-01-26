@@ -26,7 +26,7 @@ require('../config.php');
 
 require_login();
 
-$contextid    = optional_param('contextid', \context_system::instance()->id, PARAM_INT);
+$contextid = optional_param('contextid', \context_system::instance()->id, PARAM_INT);
 $search = optional_param('search', '', PARAM_CLEAN);
 $context = context::instance_by_id($contextid, MUST_EXIST);
 
@@ -37,7 +37,7 @@ if (!$cb->is_context_allowed($context)) {
 
 require_capability('moodle/contentbank:access', $context);
 
-$parentid = optional_param('parent', 0, PARAM_INT);
+$folderid = optional_param('folderid', 0, PARAM_INT);
 $statusmsg = optional_param('statusmsg', '', PARAM_ALPHANUMEXT);
 $errormsg = optional_param('errormsg', '', PARAM_ALPHANUMEXT);
 
@@ -62,6 +62,98 @@ $PAGE->add_body_class('limitedwidth');
 $PAGE->set_pagetype('contentbank');
 $PAGE->set_secondary_active_tab('contentbank');
 
+foreach (\core_contentbank\contentbank::make_breadcrumb($folderid, $contextid) as $bc) {
+    $PAGE->navbar->add($bc['name'], $bc['link']);
+}
+
+// Create the cog menu with all the secondary actions, such as delete, rename...
+$actionmenu = new action_menu();
+$actionmenu->set_alignment(action_menu::TR, action_menu::BR);
+if (has_capability('moodle/contentbank:createfolder', $context)) {
+
+    $label = get_string('newfolder', 'core_contentbank');
+
+    $attributes = [
+        'data-action' => 'createfolder',
+        'data-contextid' => $contextid,
+        'data-parentid' => $folderid,
+    ];
+
+    $actionmenu->add_secondary_action(new action_menu_link(
+        new moodle_url('#'),
+        new pix_icon('a/create_folder', $label),
+        $label,
+        false,
+        $attributes
+    ));
+
+    $PAGE->requires->js_call_amd(
+        'core_contentbank/create_folder',
+        'initModal',
+        ['[data-action="createfolder"]', \core_contentbank\form\create_folder::class, $contextid, $folderid]);
+
+    if ($folderid) {
+        $folderrecord = $DB->get_record('contentbank_folders', ['id' => $folderid, 'contextid' => $contextid]);
+        $folder = new \core_contentbank\folder($folderrecord);
+
+        $label = get_string('renamefolder', 'core_contentbank');
+
+        $attributes = [
+            'data-action' => 'renamefolder',
+            'data-contextid' => $contextid,
+            'data-folderid' => $folderid,
+        ];
+
+        $actionmenu->add_secondary_action(new action_menu_link(
+            new moodle_url('#'),
+            new pix_icon('i/edit', $label),
+            $label,
+            false,
+            $attributes
+        ));
+
+        $PAGE->requires->js_call_amd(
+            'core_contentbank/rename_folder',
+            'initModal',
+            [
+                '[data-action="renamefolder"]',
+                \core_contentbank\form\rename_folder::class,
+                $contextid, $folderrecord->parent, $folderid, $folderrecord->name
+            ]);
+
+
+        if ($folder->is_empty()) {
+            $label = get_string('deletefolder', 'core_contentbank');
+
+            $attributes = [
+                'data-action' => 'deletefolder',
+                'data-contextid' => $contextid,
+                'data-parentid' => $folderid,
+            ];
+
+            $actionmenu->add_secondary_action(new action_menu_link(
+                new moodle_url('#'),
+                new pix_icon('i/delete', $label),
+                $label,
+                false,
+                $attributes
+            ));
+
+            $PAGE->requires->js_call_amd(
+                'core_contentbank/delete_folder',
+                'initModal',
+                ['[data-action="deletefolder"]', $contextid, $folderid]);
+        }
+    }
+}
+
+// Add the cog menu to the header.
+$PAGE->add_header_action(html_writer::div(
+    $OUTPUT->render($actionmenu),
+    'd-print-none',
+    ['id' => 'region-main-settings-menu']
+));
+
 // Get all contents managed by active plugins where the user has permission to render them.
 $contenttypes = [];
 $enabledcontenttypes = $cb->get_enabled_content_types();
@@ -73,12 +165,10 @@ foreach ($enabledcontenttypes as $contenttypename) {
     }
 }
 
-$PAGE->requires->js_call_amd('core_contentbank/folders', 'init');
-
 // Get all folders in this path.
-$folders = \core_contentbank\contentbank::get_folders_in_parent($parentid);
+$folders = \core_contentbank\contentbank::get_folders_in_folder($folderid, $contextid);
 
-$foldercontents = $cb->search_contents($search, $contextid, $contenttypes, $parentid);
+$foldercontents = $cb->search_contents($search, $contextid, $contenttypes, $folderid);
 
 // Get the toolbar ready.
 $toolbar = array();
@@ -99,35 +189,22 @@ if (has_capability('moodle/contentbank:useeditor', $context)) {
     }
 }
 
-// Place the Create Folder button in the toolbar.
-if (has_capability('moodle/contentbank:createfolder', $context)) {
-    $actionurl = new moodle_url('#');
-
-    $toolbar[] = [
-        'name' => get_string('newfolder', 'core_contentbank'),
-        'link' => $actionurl,
-        'icon' => 'i/folder',
-        'action' => 'createfolder',
-        'extra' => 'data-parentid="'. $parentid. '"'
-    ];
-}
-
 // Place the Upload button in the toolbar.
 if (has_capability('moodle/contentbank:upload', $context)) {
     // Don' show upload button if there's no plugin to support any file extension.
     $accepted = $cb->get_supported_extensions_as_string($context);
     if (!empty($accepted)) {
-        $importurl = new moodle_url('/contentbank/index.php', ['contextid' => $contextid, 'parent' => $parentid]);
+        $importurl = new moodle_url('/contentbank/index.php', ['contextid' => $contextid, 'folder' => $folderid]);
         $toolbar[] = [
             'name' => get_string('upload', 'contentbank'),
             'link' => $importurl->out(false),
             'icon' => 'i/upload',
-            'action' => 'upload'
+            'action' => 'upload',
         ];
         $PAGE->requires->js_call_amd(
             'core_contentbank/upload',
             'initModal',
-            ['[data-action=upload]', \core_contentbank\form\upload_files::class, $contextid]
+            ['[data-action=upload]', \core_contentbank\form\upload_files::class, $contextid, 0, $folderid]
         );
     }
 }
@@ -146,7 +223,7 @@ if ($errormsg !== '' && get_string_manager()->string_exists($errormsg, 'core_con
 }
 
 // Render the contentbank contents.
-$folder = new \core_contentbank\output\bankcontent($foldercontents, $toolbar, $context, $cb, $parentid, $folders);
+$folder = new \core_contentbank\output\bankcontent($foldercontents, $toolbar, $context, $cb, $folderid, $folders);
 echo $OUTPUT->render($folder);
 
 echo $OUTPUT->box_end();

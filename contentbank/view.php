@@ -71,9 +71,15 @@ if ($context->id == \context_system::instance()->id) {
 } else {
     $PAGE->set_context($context);
 }
+
+foreach (\core_contentbank\contentbank::make_breadcrumb($record->parent, $context->id) as $bc) {
+    $PAGE->navbar->add($bc['name'], $bc['link']);
+}
 $PAGE->navbar->add($record->name);
+
 $title .= ": ".$record->name;
 $PAGE->set_title($title);
+$PAGE->set_heading($pageheading);
 $PAGE->set_pagetype('contentbank');
 $PAGE->set_pagelayout('incourse');
 $PAGE->set_secondary_active_tab('contentbank');

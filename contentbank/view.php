@@ -68,7 +68,12 @@ if ($content->get_visibility() == content::VISIBILITY_UNLISTED) {
 
 $PAGE->set_url(new \moodle_url('/contentbank/view.php', ['id' => $id]));
 $PAGE->set_context($context);
+
+foreach (\core_contentbank\contentbank::make_breadcrumb($record->parent, $context->id) as $bc) {
+    $PAGE->navbar->add($bc['name'], $bc['link']);
+}
 $PAGE->navbar->add($record->name);
+
 $PAGE->set_heading($pageheading);
 $title .= ": ".$record->name;
 $PAGE->set_title($title);

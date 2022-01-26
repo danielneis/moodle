@@ -26,8 +26,6 @@ namespace core_contentbank;
 
 use stdClass;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Content bank manager class
  *
@@ -96,14 +94,28 @@ class folder {
      *
      * @return boolean  True if the folder has been succesfully updated. False otherwise.
      */
-    private function update(): bool {
+    public function update(): bool {
         global $USER, $DB;
 
-        $content = $this->content;
-        $content->usermodified = $USER->id;
-        $content->timemodified = time();
+        $folder = $this->content;
+        $folder->usermodified = $USER->id;
+        $folder->timemodified = time();
 
         return $DB->update_record('contentbank_folders', $folder);
+    }
+
+    /**
+     * Deletes a folder and return the id of it's parent
+     *
+     * @param int $folderid The ID of the folder to delete
+     * @param int $contextid The contextid of the folder to delete
+     * @return int ID of parent folder
+     */
+    public static function delete_folder(int $folderid, int $contextid): int {
+        global $DB;
+        $parentid = $DB->get_field('contentbank_folders', 'parent', ['id' => $folderid, 'contextid' => $contextid]);
+        $DB->delete_records('contentbank_folders', ['id' => $folderid, 'contextid' => $contextid]);
+        return $parentid;
     }
 
     /**
@@ -162,6 +174,29 @@ class folder {
     public function set_path(string $path): bool {
         $this->content->path = $path;
         return $this->update();
+    }
+
+    /**
+     * Check if folder is empty (there is no folder or content inside it).
+     *
+     * @return boolean  True if the folder is empty, false otherwise.
+     */
+    public function is_empty(): bool {
+        global $DB;
+        $sql = "SELECT COUNT(*) as folderscount
+                  FROM {contentbank_folders} cbf
+                 WHERE cbf.contextid = :contextid
+                   AND " . $DB->sql_like('cbf.path', ':path', false, false);
+        $params = [
+            'path' => $DB->sql_like_escape($this->content->path) . '/%',
+            'contextid' => $this->content->contextid
+        ];
+        $count = $DB->get_records_sql($sql, $params);
+        $count = array_pop($count);
+        if ($count->folderscount) {
+            return false;
+        }
+        return empty($DB->record_exists('contentbank_content', ['parent' => $this->get_id()]));
     }
 
     /**

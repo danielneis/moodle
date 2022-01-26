@@ -208,10 +208,8 @@ class contentbank {
             $sql .= ' AND c.contextid = :contextid ';
         }
 
-        if (!empty($parentid)) {
-            $params['parentid'] = $parentid;
-            $sql .= ' AND parent = :parentid ';
-        }
+        $params['parentid'] = $parentid;
+        $sql .= ' AND parent = :parentid ';
 
         // Search for contents having this string (if defined).
         if (!empty($search)) {
@@ -260,9 +258,10 @@ class contentbank {
      * @param \context $context Context where to upload the file and content.
      * @param int $userid Id of the user uploading the file.
      * @param stored_file $file The file to get information from
+     * @param int $parentid Id of the folder where to upload the file and content.
      * @return content
      */
-    public function create_content_from_file(\context $context, int $userid, stored_file $file): ?content {
+    public function create_content_from_file(\context $context, int $userid, stored_file $file, ?int $parentid = 0): ?content {
         global $USER;
         if (empty($userid)) {
             $userid = $USER->id;
@@ -275,6 +274,7 @@ class contentbank {
         $record = new \stdClass();
         $record->name = $filename;
         $record->usercreated = $userid;
+        $record->parent = $parentid;
         $contentype = new $classname($context);
         $content = $contentype->upload_content($file, $record);
         $event = \core\event\contentbank_content_uploaded::create_from_record($content->get_content());
@@ -384,14 +384,45 @@ class contentbank {
 
     /** Function to get all the folders in a parent folder.
      *
-     * @param int $parentid     Parent folder where to look for folders.
+     * @param int $folderid  Folder where to look for folders.
+     * @param int $contextid Context where to look for folders.
      * @return array
      * @throws \dml_exception
      */
-    public static function get_folders_in_parent(int $parentid): array {
+    public static function get_folders_in_folder(int $folderid, int $contextid): array {
+        global $DB;
+        return $DB->get_records('contentbank_folders', ['parent' => $folderid, 'contextid' => $contextid]);
+    }
+
+    /**
+     * Creates array of breadcrumb for folders.
+     *
+     * @param int $folderid Id of the folder to make breadcrumbs for
+     * @param int $contextid Id of the context
+     * @return array The array with folder path
+     */
+    public static function make_breadcrumb(int $folderid, int $contextid): array {
         global $DB;
 
-        $folders = $DB->get_records('contentbank_folders', ['parent' => $parentid]);
-        return $folders;
+        $breadcrumb = [];
+        if ($folderid) {
+            $params = ['contextid' => $contextid, 'id' => $folderid];
+            $path = $DB->get_field('contentbank_folders', 'path', $params);
+            $levels = explode('/', $path);
+            $url = new \moodle_url('/contentbank/index.php', $params);
+            foreach ($levels as $level) {
+                if ($level == '') {
+                    continue;
+                }
+                if ($name = $DB->get_field('contentbank_folders', 'name', ['id' => $level])) {
+                    $url->params(['folderid' => $level]);
+                    $breadcrumb[] = [
+                        'name' => $name,
+                        'link' => $url->out()
+                    ];
+                }
+            }
+        }
+        return $breadcrumb;
     }
 }

@@ -35,7 +35,10 @@ $PAGE->requires->js_call_amd('core_contentbank/actions', 'init');
 
 $record = $DB->get_record('contentbank_content', ['id' => $id], '*', MUST_EXIST);
 $context = context::instance_by_id($record->contextid, MUST_EXIST);
+
 require_capability('moodle/contentbank:access', $context);
+
+$breadcrumb = \core_contentbank\contentbank::make_breadcrumb($record->folderid, $context->id);
 
 $statusmsg = optional_param('statusmsg', '', PARAM_ALPHANUMEXT);
 $errormsg = optional_param('errormsg', '', PARAM_ALPHANUMEXT);
@@ -68,7 +71,12 @@ if ($content->get_visibility() == content::VISIBILITY_UNLISTED) {
 
 $PAGE->set_url(new \moodle_url('/contentbank/view.php', ['id' => $id]));
 $PAGE->set_context($context);
+
+foreach (\core_contentbank\contentbank::make_breadcrumb($record->parent, $context->id) as $bc) {
+    $PAGE->navbar->add($bc['name'], $bc['link']);
+}
 $PAGE->navbar->add($record->name);
+
 $PAGE->set_heading($pageheading);
 $title .= ": ".$record->name;
 $PAGE->set_title($title);

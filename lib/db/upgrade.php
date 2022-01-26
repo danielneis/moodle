@@ -2727,5 +2727,18 @@ function xmldb_main_upgrade($oldversion) {
         upgrade_main_savepoint(true, 2021051705.06);
     }
 
+    if ($oldversion < 2021051705.08) {
+
+        // Rename field parent on table contentbank_content to NEWNAMEGOESHERE.
+        $table = new xmldb_table('contentbank_content');
+        $field = new xmldb_field('parent', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0', 'contenttype');
+
+        // Launch rename field parent.
+        $dbman->rename_field($table, $field, 'folderid');
+
+        // Main savepoint reached.
+        upgrade_main_savepoint(true, 2021051705.08);
+    }
+
     return true;
 }

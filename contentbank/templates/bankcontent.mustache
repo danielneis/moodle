@@ -23,7 +23,7 @@
         "breadcrumb": [
             {
                 "name": "First level",
-                "link": "http://something/contentbank/index.php?parent=1"
+                "link": "http://something/contentbank/index.php?folderid=1"
             }
         ],
         "contents": [
@@ -99,11 +99,8 @@ data-region="contentbank">
     <div class="pb-3 border">
         <div class="content-bank">
             <div class="cb-navbar bg-light p-2 border-bottom">
-                <div class="cb-navbar-breadbrumb">
-                    <a href="{{{ root }}}" title="/">{{#pix}} i/folder {{/pix}}</a>
-                    {{#breadcrumb}}
-                        / <a href="{{{ link }}}">{{{ name }}}</a>
-                    {{/breadcrumb}}
+                <div class="cb-navbar-breadcrumb">
+                    {{#pix}} i/folder {{/pix}}
                 </div>
                 <div class="cb-navbar-totalsearch d-none">
                 </div>

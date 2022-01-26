@@ -86,7 +86,9 @@ class viewcontent implements renderable, templatable {
             $data->editcontenturl = $editcontenturl->out(false);
         }
 
-        $closeurl = new moodle_url('/contentbank/index.php', ['contextid' => $this->content->get_contextid()]);
+        $closeurl = new moodle_url('/contentbank/index.php',
+            ['contextid' => $this->content->get_contextid(), 'folderid' => $this->content->get_folderid()]
+        );
         $data->closeurl = $closeurl->out(false);
 
         return $data;

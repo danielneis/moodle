@@ -78,8 +78,11 @@ class create_folder extends \core_form\dynamic_form {
             $content->name = $data->name;
             $content->parent = $data->parentid;
             $content->contextid = $data->contextid;
-            $folder = \core_contentbank\folder::create_folder($content);
-            $url = new moodle_url('/contentbank/index.php', ['contextid' => $data->contextid, 'folderid' => $folder->get_id()]);
+            if ($folder = \core_contentbank\folder::create_folder($content)) {
+                $url = new moodle_url('/contentbank/index.php', ['contextid' => $data->contextid, 'folderid' => $folder->get_id()]);
+            } else {
+                $url = new moodle_url('/contentbank/index.php', ['contextid' => $data->contextid]);
+            }
             return ['returnurl' => $url->out(false)];
         }
     }

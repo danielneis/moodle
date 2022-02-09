@@ -360,7 +360,8 @@ class contentbank {
         return in_array($context->contextlevel, self::ALLOWED_CONTEXT_LEVELS);
     }
 
-    /** Function to get all the folders in a parent folder.
+    /**
+     * Function to get all the folders in a parent folder.
      *
      * @param int $folderid  Folder where to look for folders.
      * @param int $contextid Context where to look for folders.

@@ -14,13 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-/**
- * Restore date tests.
- *
- * @package    mod_imscp
- * @copyright  2017 onwards Ankit Agarwal <ankit.agrr@gmail.com>
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- */
+namespace mod_folder\backup;
 
 defined('MOODLE_INTERNAL') || die();
 
@@ -30,20 +24,20 @@ require_once($CFG->libdir . "/phpunit/classes/restore_date_testcase.php");
 /**
  * Restore date tests.
  *
- * @package    mod_imscp
+ * @package    mod_folder
  * @copyright  2017 onwards Ankit Agarwal <ankit.agrr@gmail.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class mod_imscp_restore_date_testcase extends restore_date_testcase {
+class restore_date_test extends \restore_date_testcase {
 
     public function test_restore_dates() {
         global $DB;
 
-        list($course, $imscp) = $this->create_course_and_module('imscp');
+        list($course, $folder) = $this->create_course_and_module('folder');
 
         // Do backup and restore.
         $newcourseid = $this->backup_and_restore($course);
-        $newimscp = $DB->get_record('imscp', ['course' => $newcourseid]);
-        $this->assertFieldsNotRolledForward($imscp, $newimscp, ['timemodified']);
+        $newfolder = $DB->get_record('folder', ['course' => $newcourseid]);
+        $this->assertFieldsNotRolledForward($folder, $newfolder, ['timemodified']);
     }
 }

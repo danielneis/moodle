@@ -57,16 +57,18 @@ class folder {
     public static function create_folder(stdClass $folder = null): ?folder {
         global $USER, $DB;
 
+        $now = time();
         $record = new stdClass();
         $record->name = $folder->name ?? '';
         $record->contextid = $folder->contextid ?? \context_system::instance()->id;
         $record->parent = $folder->parent ?? 0;
         $record->usercreated = $folder->usercreated ?? $USER->id;
-        $record->timecreated = time();
-        $record->usermodified = $record->usercreated;
-        $record->timemodified = $record->timecreated;
+        $record->timecreated = $now;
+        $record->usermodified = $folder->usercreated ?? $USER->id;
+        $record->timemodified = $now;
 
-        if ($DB->get_record('contentbank_folders', ['name' => $record->name, 'parent' => $record->parent])) {
+        $params = ['name' => $record->name, 'parent' => $record->parent, 'contextid' => $folder->contexid];
+        if ($DB->get_record('contentbank_folders', $params)) {
             return null;
         }
 

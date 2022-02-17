@@ -14,36 +14,34 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-/**
- * Restore date tests.
- *
- * @package    mod_folder
- * @copyright  2017 onwards Ankit Agarwal <ankit.agrr@gmail.com>
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- */
-
 defined('MOODLE_INTERNAL') || die();
 
-global $CFG;
-require_once($CFG->libdir . "/phpunit/classes/restore_date_testcase.php");
-
 /**
- * Restore date tests.
+ * Coverage information for the core_completion.
  *
- * @package    mod_folder
- * @copyright  2017 onwards Ankit Agarwal <ankit.agrr@gmail.com>
+ * @package    core
+ * @category   phpunit
+ * @copyright  2022 Andrew Nicols <andrew@nicols.co.uk>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class mod_folder_restore_date_testcase extends restore_date_testcase {
 
-    public function test_restore_dates() {
-        global $DB;
+/**
+ * Coverage information for the core subsystem.
+ *
+ * @copyright  2018 Andrew Nicols <andrew@nicols.co.uk>
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+return new class extends phpunit_coverage_info {
+    /** @var array The list of folders relative to the plugin root to include in coverage generation. */
+    protected $includelistfolders = [
+        'criteria',
+    ];
 
-        list($course, $folder) = $this->create_course_and_module('folder');
-
-        // Do backup and restore.
-        $newcourseid = $this->backup_and_restore($course);
-        $newfolder = $DB->get_record('folder', ['course' => $newcourseid]);
-        $this->assertFieldsNotRolledForward($folder, $newfolder, ['timemodified']);
-    }
-}
+    /** @var array The list of files relative to the plugin root to include in coverage generation. */
+    protected $includelistfiles = [
+        'completion_aggregation.php',
+        'completion_completion.php',
+        'completion_criteria_completion.php',
+        'data_object.php'
+    ];
+};

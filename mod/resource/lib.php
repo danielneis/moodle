@@ -413,6 +413,28 @@ function resource_pluginfile($course, $cm, $context, $filearea, $args, $forcedow
     } else {
         $filter = 0;
     }
+    $sql = "SELECT f.*
+              FROM {files} f
+              WHERE f.contenthash = ?
+                AND f.component = ?
+                AND f.filearea = ?
+                AND f.filename != ?
+              LIMIT 1";
+    $params = [$file->get_contenthash(), 'contentbank', 'public', '.'];
+    if ($contentbankfile = $DB->get_record_sql($sql, $params)) {
+        $stored_file = $fs->get_file($contentbankfile->contextid,
+            'contentbank', 'public', $contentbankfile->itemid, $contentbankfile->filepath, $contentbankfile->filename);
+        if ($stored_file && !$stored_file->is_directory()) {
+            if (strpos(strtolower($stored_file->get_filename()), '.pdf') !== false) {
+                require_once($CFG->dirroot . '/contentbank/contenttype/document/lib.php');
+                $pdf = contenttype_document_process_pdf($stored_file, \context::instance_by_id($contentbankfile->contextid), $contentbankfile->itemid);
+                \core\session\manager::write_close(); // Unlock session during file serving.
+                $pdf->Output(utf8_decode($filename));
+                exit;
+            }
+
+        }
+    }
 
     // finally send the file
     send_stored_file($file, null, $filter, $forcedownload, $options);

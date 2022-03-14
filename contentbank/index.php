@@ -39,8 +39,7 @@ $folderid = optional_param('folderid', 0, PARAM_INT);
 
 $breadcrumb = \core_contentbank\contentbank::make_breadcrumb($folderid, $contextid);
 
-if ((!$breadcrumb[0]['name'] == 'Professores') &&
-     user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'editingteacher']))) {
+if (!user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'editingteacher']))) {
     require_capability('moodle/contentbank:access', $context);
 }
 

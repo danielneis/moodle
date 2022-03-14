@@ -35,9 +35,15 @@ if (!$cb->is_context_allowed($context)) {
     print_error('contextnotallowed', 'core_contentbank');
 }
 
-require_capability('moodle/contentbank:access', $context);
-
 $folderid = optional_param('folderid', 0, PARAM_INT);
+
+$breadcrumb = \core_contentbank\contentbank::make_breadcrumb($folderid, $contextid);
+
+if ((!$breadcrumb[0]['name'] == 'Professores') &&
+     user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'editingteacher']))) {
+    require_capability('moodle/contentbank:access', $context);
+}
+
 $statusmsg = optional_param('statusmsg', '', PARAM_ALPHANUMEXT);
 $errormsg = optional_param('errormsg', '', PARAM_ALPHANUMEXT);
 
@@ -52,14 +58,15 @@ $PAGE->set_title($title);
 $PAGE->set_heading($title);
 $PAGE->set_pagetype('contentbank');
 
-foreach (\core_contentbank\contentbank::make_breadcrumb($folderid, $contextid) as $bc) {
+foreach ($breadcrumb as $bc) {
     $PAGE->navbar->add($bc['name'], $bc['link']);
 }
 
 // Create the cog menu with all the secondary actions, such as delete, rename...
 $actionmenu = new action_menu();
 $actionmenu->set_alignment(action_menu::TR, action_menu::BR);
-if (has_capability('moodle/contentbank:createfolder', $context)) {
+if (has_capability('moodle/contentbank:createfolder', $context) ||
+    user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'editingteacher']))) {
 
     $label = get_string('newfolder', 'core_contentbank');
 
@@ -81,7 +88,9 @@ if (has_capability('moodle/contentbank:createfolder', $context)) {
         'core_contentbank/create_folder',
         'initModal',
         ['[data-action="createfolder"]', \core_contentbank\form\create_folder::class, $contextid, $folderid]);
+}
 
+if (has_capability('moodle/contentbank:createfolder', $context)) {
     if ($folderid) {
         $folderrecord = $DB->get_record('contentbank_folders', ['id' => $folderid, 'contextid' => $contextid]);
         $folder = new \core_contentbank\folder($folderrecord);
@@ -180,7 +189,8 @@ if (has_capability('moodle/contentbank:useeditor', $context)) {
 }
 
 // Place the Upload button in the toolbar.
-if (has_capability('moodle/contentbank:upload', $context)) {
+if (has_capability('moodle/contentbank:upload', $context) ||
+    user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'editingteacher']))) {
     // Don' show upload button if there's no plugin to support any file extension.
     $accepted = $cb->get_supported_extensions_as_string($context);
     if (!empty($accepted)) {

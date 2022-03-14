@@ -70,7 +70,10 @@ class upload_files extends \core_form\dynamic_form {
      * by calling $this->optional_param()
      */
     protected function check_access_for_dynamic_submission(): void {
-        require_capability('moodle/contentbank:upload', $this->get_context_for_dynamic_submission());
+        global $DB, $USER;
+        if (!user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'editingteacher']))) {
+            require_capability('moodle/contentbank:upload', $this->get_context_for_dynamic_submission());
+        }
 
         // Check the context used by the content bank is allowed.
         $cb = new \core_contentbank\contentbank();

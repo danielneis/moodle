@@ -363,6 +363,11 @@ abstract class contenttype {
      */
     final public function can_access(): bool {
         $classname = 'contenttype/'.$this->get_plugin_name();
+        global $USER, $DB;
+        if (($classname == 'contenttype/document') &&
+            user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'editingteacher']))) {
+            return true;
+        }
         $capability = $classname.":access";
         $hascapabilities = has_capability('moodle/contentbank:access', $this->context)
             && has_capability($capability, $this->context);
@@ -385,8 +390,12 @@ abstract class contenttype {
      * @return bool     True if content could be uploaded. False otherwise.
      */
     final public function can_upload(): bool {
+        global $DB, $USER;
         if (!$this->is_feature_supported(self::CAN_UPLOAD)) {
             return false;
+        }
+        if (user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'editingteacher']))) {
+            return true;
         }
         if (!$this->can_access()) {
             return false;

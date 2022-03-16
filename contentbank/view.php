@@ -38,7 +38,7 @@ $context = context::instance_by_id($record->contextid, MUST_EXIST);
 
 $breadcrumb = \core_contentbank\contentbank::make_breadcrumb($record->parent, $context->id);
 
-if ((!$breadcrumb[0]['name'] == 'Professores') &&
+if ((!empty($breadcrumb) && !$breadcrumb[0]['name'] == 'Professores') &&
      user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'editingteacher']))) {
 
     require_capability('moodle/contentbank:access', $context);

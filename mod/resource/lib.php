@@ -426,7 +426,22 @@ function resource_pluginfile($course, $cm, $context, $filearea, $args, $forcedow
         $stored_file = $fs->get_file($contentbankfile->contextid,
             'contentbank', 'public', $contentbankfile->itemid, $contentbankfile->filepath, $contentbankfile->filename);
         if ($stored_file && !$stored_file->is_directory()) {
-            if (strpos(strtolower($stored_file->get_filename()), '.pdf') !== false) {
+
+            $filename = $stored_file->get_filename();
+            if ((strpos(strtolower($filename), '.odp') !== false) ||
+                (strpos(strtolower($filename), '.ppt') !== false) ||
+                (strpos(strtolower($filename), '.doc') !== false)) {
+
+                $converter = new \core_files\converter();
+                $conversion = $converter->start_conversion($stored_file, 'pdf', true);
+                if (!$conversion || !$stored_file = $conversion->get_destfile()) {
+                    throw new moodle_exception('convertererror', 'contenttype_document');
+                }
+                $filenamearray = explode('.', $filename);
+                $filename = $filenamearray[0] . '.pdf';
+
+            }
+            if (strpos(strtolower($filename), '.pdf') !== false) {
                 require_once($CFG->dirroot . '/contentbank/contenttype/document/lib.php');
                 $pdf = contenttype_document_process_pdf($stored_file, \context::instance_by_id($contentbankfile->contextid), $contentbankfile->itemid);
                 \core\session\manager::write_close(); // Unlock session during file serving.

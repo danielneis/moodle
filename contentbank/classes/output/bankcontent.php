@@ -69,14 +69,14 @@ class bankcontent implements renderable, templatable {
      * @param \core_contentbank\content[] $contents   Array of content bank contents.
      * @param array $toolbar     List of content bank toolbar options.
      * @param \context $context Optional context to check (default null)
-     * @param int $parentid   Current folder id.
+     * @param int $folderid   Current folder id.
      * @param \core_contentbank\folder[] $folders   Array of folders.
      */
-    public function __construct(array $contents, array $toolbar, \context $context = null, int $parentid, array $folders) {
+    public function __construct(array $contents, array $toolbar, \context $context = null, int $folderid, array $folders) {
         global $DB;
 
-        if ($parentid) {
-            $this->path = $DB->get_field('contentbank_folders', 'path', ['id' => $parentid]);
+        if ($folderid) {
+            $this->path = $DB->get_field('contentbank_folders', 'path', ['id' => $folderid]);
         }
         $this->contents = $contents;
         $this->toolbar = $toolbar;

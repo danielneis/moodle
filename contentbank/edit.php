@@ -89,7 +89,7 @@ $PAGE->set_url(new \moodle_url('/contentbank/edit.php', $values));
 $PAGE->set_context($context);
 $PAGE->set_title($title);
 
-$breadcrumb = \core_contentbank\contentbank::make_breadcrumb($record->parent, $context->id);
+$breadcrumb = \core_contentbank\contentbank::make_breadcrumb($record->folderid, $context->id);
 
 foreach ($breadcrumb as $bc) {
     $PAGE->navbar->add($bc['name'], $bc['link']);

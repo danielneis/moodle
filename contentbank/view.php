@@ -36,7 +36,7 @@ $PAGE->requires->js_call_amd('core_contentbank/actions', 'init');
 $record = $DB->get_record('contentbank_content', ['id' => $id], '*', MUST_EXIST);
 $context = context::instance_by_id($record->contextid, MUST_EXIST);
 
-$breadcrumb = \core_contentbank\contentbank::make_breadcrumb($record->parent, $context->id);
+$breadcrumb = \core_contentbank\contentbank::make_breadcrumb($record->folderid, $context->id);
 
 if ((!empty($breadcrumb) && !$breadcrumb[0]['name'] == 'Professores') &&
      user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'editingteacher']))) {

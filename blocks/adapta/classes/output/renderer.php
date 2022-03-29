@@ -15,19 +15,16 @@
 // along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
- * Plugin strings are defined here.
+ * Block adapta renderer.
  *
  * @package     block_adapta
- * @category    string
  * @copyright   2022 Daniel Neis Araujo <daniel@adapta.online>
  * @license     https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+namespace block_adapta\output;
+
 defined('MOODLE_INTERNAL') || die();
 
-$string['adapta:view'] = 'View Adapta Block';
-$string['exemplo'] = 'Exemplo 123';
-$string['heading'] = 'Heading here';
-$string['navbaritem'] = 'Navbar item';
-$string['pluginname'] = 'Bloco Adapta';
-$string['viewadapta'] = 'View';
+class renderer extends \plugin_renderer_base {
+}

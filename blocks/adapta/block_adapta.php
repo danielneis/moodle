@@ -52,12 +52,10 @@ class block_adapta extends block_base {
         $this->content->icons = array();
         $this->content->footer = '';
 
-        if (!empty($this->config->text)) {
-            $this->content->text = $this->config->text;
-        } else {
-            $text = 'Please define the content text in /blocks/adapta/block_adapta.php.';
-            $this->content->text = $text;
-        }
+        $url = new moodle_url('/blocks/adapta/view.php', ['id' => $this->instance->id]);
+        $link = html_writer::link($url, get_string('viewadapta', 'block_adapta'));
+
+        $this->content->text = $link;
 
         return $this->content;
     }

@@ -81,11 +81,11 @@ class bankcontent implements renderable, templatable {
      * @param array $toolbar List of content bank toolbar options.
      * @param \context $context Optional context to check (default null)
      * @param contentbank $cb Contenbank object.
-     * @param int $parentid   Current folder id.
+     * @param int $folderid   Current folder id.
      * @param \core_contentbank\folder[] $folders   Array of folders.
      */
     public function __construct(array $contents, array $toolbar, \context $context = null, contentbank $cb,
-        int $parentid, array $folders) {
+        int $folderid, array $folders) {
 
         global $DB;
 
@@ -93,8 +93,8 @@ class bankcontent implements renderable, templatable {
         $this->toolbar = $toolbar;
         $this->context = $context;
         list($this->allowedcategories, $this->allowedcourses) = $cb->get_contexts_with_capabilities_by_user();
-        if ($parentid) {
-            $this->path = $DB->get_field('contentbank_folders', 'path', ['id' => $parentid]);
+        if ($folderid) {
+            $this->path = $DB->get_field('contentbank_folders', 'path', ['id' => $folderid]);
         }
         $this->folders = $folders;
     }

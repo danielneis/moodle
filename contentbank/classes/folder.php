@@ -196,7 +196,7 @@ class folder {
         if ($count->folderscount) {
             return false;
         }
-        return empty($DB->record_exists('contentbank_content', ['parent' => $this->get_id()]));
+        return empty($DB->record_exists('contentbank_content', ['folderid' => $this->get_id()]));
     }
 
     /**

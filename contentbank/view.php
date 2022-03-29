@@ -72,7 +72,7 @@ if ($context->id == \context_system::instance()->id) {
     $PAGE->set_context($context);
 }
 
-foreach (\core_contentbank\contentbank::make_breadcrumb($record->parent, $context->id) as $bc) {
+foreach (\core_contentbank\contentbank::make_breadcrumb($record->folderid, $context->id) as $bc) {
     $PAGE->navbar->add($bc['name'], $bc['link']);
 }
 $PAGE->navbar->add($record->name);

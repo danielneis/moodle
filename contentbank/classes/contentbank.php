@@ -177,10 +177,11 @@ class contentbank {
      * @param  string|null $search Optional string to search (for now it will search only into the name).
      * @param  int $contextid Optional contextid to search.
      * @param  array $contenttypenames Optional array with the list of content-type names to search.
+     * @param  int $folderid Optional folderid to search.
      * @return array The contents for the enabled contentbank-type plugins having $search as name and placed in $contextid.
      */
     public function search_contents(?string $search = null, ?int $contextid = 0,
-        ?array $contenttypenames = null, ?int $parentid = 0): array {
+        ?array $contenttypenames = null, ?int $folderid = 0): array {
         global $DB;
 
         $contents = [];
@@ -208,8 +209,8 @@ class contentbank {
             $sql .= ' AND contextid = :contextid ';
         }
 
-        $params['parentid'] = $parentid;
-        $sql .= ' AND parent = :parentid ';
+        $params['folderid'] = $folderid;
+        $sql .= ' AND folderid = :folderid ';
 
         // Search for contents having this string (if defined).
         if (!empty($search)) {
@@ -267,10 +268,10 @@ class contentbank {
      * @param \context $context Context where to upload the file and content.
      * @param int $userid Id of the user uploading the file.
      * @param stored_file $file The file to get information from
-     * @param int $parentid Id of the folder where to upload the file and content.
+     * @param int $folderid Id of the folder where to upload the file and content.
      * @return content
      */
-    public function create_content_from_file(\context $context, int $userid, stored_file $file, ?int $parentid = 0): ?content {
+    public function create_content_from_file(\context $context, int $userid, stored_file $file, ?int $folderid = 0): ?content {
         global $USER;
         if (empty($userid)) {
             $userid = $USER->id;
@@ -283,7 +284,7 @@ class contentbank {
         $record = new \stdClass();
         $record->name = $filename;
         $record->usercreated = $userid;
-        $record->parent = $parentid;
+        $record->folderid = $folderid;
         $contentype = new $classname($context);
         $content = $contentype->upload_content($file, $record);
         $event = \core\event\contentbank_content_uploaded::create_from_record($content->get_content());
@@ -392,7 +393,7 @@ class contentbank {
     }
 
     /**
-     * Function to get all the folders in a parent folder.
+     * Function to get all the folders in a folder.
      *
      * @param int $folderid  Folder where to look for folders.
      * @param int $contextid Context where to look for folders.

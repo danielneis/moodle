@@ -213,6 +213,15 @@ abstract class content {
     }
 
     /**
+     * Returns the folderid of the content.
+     *
+     * @return int   The id of the content context.
+     */
+    public function get_folderid(): string {
+        return $this->content->folderid;
+    }
+
+    /**
      * Returns the content ID.
      *
      * @return int   The content ID.

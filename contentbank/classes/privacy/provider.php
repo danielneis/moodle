@@ -57,7 +57,7 @@ class provider implements
         $collection->add_database_table('contentbank_content', [
             'name' => 'privacy:metadata:content:name',
             'contenttype' => 'privacy:metadata:content:contenttype',
-            'parent' => 'privacy:metadata:content:parent',
+            'folderid' => 'privacy:metadata:content:folderid',
             'usercreated' => 'privacy:metadata:content:usercreated',
             'usermodified' => 'privacy:metadata:content:usermodified',
             'timecreated' => 'privacy:metadata:content:timecreated',
@@ -217,7 +217,7 @@ class provider implements
                        cb.timecreated,
                        cb.timemodified,
                        cb.contextid,
-                       cb.parent
+                       cb.folderid
                   FROM {contentbank_content} cb
                  WHERE cb.usercreated = :userid
                    AND cb.contextid {$contextsql}
@@ -242,7 +242,7 @@ class provider implements
             $data[] = (object) [
                 'name' => $content->name,
                 'contenttype' => $content->contenttype,
-                'parent' => $content->parent,
+                'folderid' => $content->folderid,
                 'usercreated' => transform::user($content->usercreated),
                 'usermodified' => transform::user($content->usermodified),
                 'timecreated' => transform::datetime($content->timecreated),

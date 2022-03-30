@@ -178,7 +178,7 @@ abstract class contentbank_browser {
         // Return all content bank content nodes from the current context which can be accessed by the user following
         // the defined conditions in can_access_content().
         return array_reduce($contents, function($list, $content) {
-            if ($this->can_access_content() &&
+            if ((!is_callable([$content, 'is_temporary']) || !$content->is_temporary()) && $this->can_access_content() &&
                     $contentnode = \repository_contentbank\helper::create_contentbank_content_node($content)) {
                 $list[] = $contentnode;
             }

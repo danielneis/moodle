@@ -51,7 +51,7 @@ class contentbank_search {
             $browser = \repository_contentbank\helper::get_contentbank_browser($contentcontext, 0);
             // If the user can access the content and content node can be created, add the node into the
             // search results list.
-            if ($browser->can_access_content() &&
+            if ((!is_callable([$content, 'is_temporary']) || !$content->is_temporary()) && $browser->can_access_content() &&
                     $contentnode = \repository_contentbank\helper::create_contentbank_content_node($content)) {
                 $list[] = $contentnode;
             }

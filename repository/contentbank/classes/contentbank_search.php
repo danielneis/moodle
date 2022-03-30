@@ -48,7 +48,7 @@ class contentbank_search {
         $contents = $contentbank->search_contents($search);
         return array_reduce($contents, function($list, $content) {
             $contentcontext = \context::instance_by_id($content->get_content()->contextid);
-            $browser = \repository_contentbank\helper::get_contentbank_browser($contentcontext);
+            $browser = \repository_contentbank\helper::get_contentbank_browser($contentcontext, 0);
             // If the user can access the content and content node can be created, add the node into the
             // search results list.
             if ($browser->can_access_content() &&

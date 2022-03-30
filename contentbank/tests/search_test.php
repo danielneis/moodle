@@ -203,7 +203,7 @@ class core_contentbank_search_testcase extends advanced_testcase {
         $this->assertEquals($content->get_id(), $doc->get('itemid'));
         $this->assertEquals($this->contentsareaid . '-' . $content->get_id(), $doc->get('id'));
         $this->assertFalse($doc->is_set('userid'));
-        $this->assertEquals($user->id, $doc->get('owneruserid'));
+        $this->assertEquals(\core_search\manager::NO_OWNER_ID, $doc->get('owneruserid'));
         $this->assertEquals($content->get_name(), $doc->get('title'));
         $this->assertEquals($content->get_name(), $doc->get('content'));
     }

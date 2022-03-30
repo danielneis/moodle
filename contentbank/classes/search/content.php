@@ -96,7 +96,7 @@ class content extends \core_search\base {
     }
 
     /**
-     * Returns the document associated with this course.
+     * Returns the document associated with this content.
      *
      * @param stdClass $record
      * @param array    $options
@@ -122,7 +122,7 @@ class content extends \core_search\base {
         } else {
             $doc->set('courseid', $SITE->id);
         }
-        $doc->set('owneruserid', $record->usercreated);
+        $doc->set('owneruserid', \core_search\manager::NO_OWNER_ID);
         $doc->set('modified', $record->timemodified);
 
         // Check if this document should be considered new.

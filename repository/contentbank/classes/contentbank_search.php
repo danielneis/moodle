@@ -48,11 +48,11 @@ class contentbank_search {
         if ($contents = $contentbank->search_contents($search)) {
             return array_reduce($contents, function($list, $content) {
                 $contentcontext = \context::instance_by_id($content->get_content()->contextid);
-                $browser = \repository_contentbank\helper::get_contentbank_browser($contentcontext);
                 $folderid = $content->get_content()->folderid;
+                $browser = \repository_contentbank\helper::get_contentbank_browser($contentcontext, $folderid);
                 // If the user can access the content and content node can be created, add the node into the
                 // search results list.
-                if ($browser->can_access_content() &&
+                if ((!is_callable([$content, 'is_temporary']) || !$content->is_temporary()) && $browser->can_access_content() &&
                         $contentnode = \repository_contentbank\helper::create_contentbank_content_node($content, $folderid)) {
                     $list[] = $contentnode;
                 }

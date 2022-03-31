@@ -58,6 +58,8 @@ class contentbank_search {
                     return $list;
                 }
             }, []);
-        }
+	} else {
+		return [];
+	}
     }
 }

@@ -209,12 +209,15 @@ class contentbank {
             $sql .= ' AND c.contextid = :contextid ';
         }
 
-        $params['folderid'] = $folderid;
-        $sql .= ' AND folderid = :folderid ';
+	if ($folderid) {
+            $folderpath = $DB->get_field('contentbank_folders', 'path', ['id' => $folderid]);
+            $params['folderpath'] = $DB->sql_like_escape($folderpath) . '%';
+            $sql .= ' AND (' . $DB->sql_like('f.path', ':folderpath', false, false);
+	}
 
         // Search for contents having this string (if defined).
         if (!empty($search)) {
-            $sql .= ' AND (' . $DB->sql_like('name', ':name', false, false);
+            $sql .= ' AND (' . $DB->sql_like('c.name', ':name', false, false);
             $params['name'] = '%' . $DB->sql_like_escape($search) . '%';
 
             $fields = \contenttype_document\customfield\document_handler::create()->get_fields();
@@ -237,6 +240,8 @@ class contentbank {
 
         $fullsql = 'SELECT c.*
                       FROM {contentbank_content} c
+                      JOIN  {contentbank_folders} f
+                        ON f.id = c.folderid
                      WHERE ' . $sql .
                    ' ORDER BY name ASC';
 

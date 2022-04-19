@@ -59,5 +59,6 @@ class contentbank_search {
                 }
             }, []);
         }
+        return [];
     }
 }

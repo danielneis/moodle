@@ -154,7 +154,7 @@ class repository_contentbank extends repository {
         $managerclass = "\\$contentbankfile->contenttype\\content";
         if ($plugin && $plugin->is_enabled() && class_exists($managerclass)) {
             $context = \context::instance_by_id($contextid);
-            $browser = \repository_contentbank\helper::get_contentbank_browser($context, $contentbankfile->parent);
+            $browser = \repository_contentbank\helper::get_contentbank_browser($context, $contentbankfile->folderid);
             return $browser->can_access_content();
         }
 

@@ -209,8 +209,10 @@ class contentbank {
             $sql .= ' AND contextid = :contextid ';
         }
 
-        $params['folderid'] = $folderid;
-        $sql .= ' AND folderid = :folderid ';
+        if ($folderid) {
+            $params['folderid'] = $folderid;
+            $sql .= ' AND folderid = :folderid ';
+        }
 
         // Search for contents having this string (if defined).
         if (!empty($search)) {

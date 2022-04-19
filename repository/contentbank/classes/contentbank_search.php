@@ -45,17 +45,20 @@ class contentbank_search {
     public static function get_search_contents(string $search): array {
         $contentbank = new \core_contentbank\contentbank();
         // Return all content bank content that matches the search criteria and can be viewed/accessed by the user.
-        $contents = $contentbank->search_contents($search);
-        return array_reduce($contents, function($list, $content) {
-            $contentcontext = \context::instance_by_id($content->get_content()->contextid);
-            $browser = \repository_contentbank\helper::get_contentbank_browser($contentcontext);
-            // If the user can access the content and content node can be created, add the node into the
-            // search results list.
-            if ($browser->can_access_content() &&
-                    $contentnode = \repository_contentbank\helper::create_contentbank_content_node($content)) {
-                $list[] = $contentnode;
-            }
-            return $list;
-        }, []);
+        if ($contents = $contentbank->search_contents($search)) {
+            return array_reduce($contents, function($list, $content) {
+                $contentcontext = \context::instance_by_id($content->get_content()->contextid);
+                $browser = \repository_contentbank\helper::get_contentbank_browser($contentcontext);
+                $folderid = $content->get_content()->folderid;
+                // If the user can access the content and content node can be created, add the node into the
+                // search results list.
+                if ($browser->can_access_content() &&
+                        $contentnode = \repository_contentbank\helper::create_contentbank_content_node($content, $folderid)) {
+                    $list[] = $contentnode;
+                }
+                return $list;
+            }, []);
+        }
+        return [];
     }
 }

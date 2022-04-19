@@ -178,10 +178,11 @@ class contentbank {
      * @param  int $contextid Optional contextid to search.
      * @param  array $contenttypenames Optional array with the list of content-type names to search.
      * @param  int $folderid Optional folderid to search.
+     * @param  bool $subfolders In case folderid is provided, if it will search subfolders.
      * @return array The contents for the enabled contentbank-type plugins having $search as name and placed in $contextid.
      */
     public function search_contents(?string $search = null, ?int $contextid = 0,
-        ?array $contenttypenames = null, ?int $folderid = 0): array {
+        ?array $contenttypenames = null, ?int $folderid = 0, ?bool $subfolders = false): array {
         global $DB;
 
         $contents = [];
@@ -209,14 +210,18 @@ class contentbank {
             $sql .= ' AND c.contextid = :contextid ';
         }
 
-        if ($folderid) {
+        if ($subfolders) {
+            $folderpath = $DB->get_field('contentbank_folders', 'path', ['id' => $folderid]);
+            $params['folderpath'] = $DB->sql_like_escape($folderpath) . '%';
+            $sql .= ' AND ' . $DB->sql_like('f.path', ':folderpath', false, false) ;
+        } else {
             $params['folderid'] = $folderid;
             $sql .= ' AND folderid = :folderid ';
         }
 
         // Search for contents having this string (if defined).
         if (!empty($search)) {
-            $sql .= ' AND (' . $DB->sql_like('name', ':name', false, false);
+            $sql .= ' AND (' . $DB->sql_like('c.name', ':name', false, false);
             $params['name'] = '%' . $DB->sql_like_escape($search) . '%';
 
             $fields = \contenttype_document\customfield\document_handler::create()->get_fields();
@@ -239,6 +244,8 @@ class contentbank {
 
         $fullsql = 'SELECT c.*
                       FROM {contentbank_content} c
+                      JOIN  {contentbank_folders} f
+                        ON f.id = c.folderid
                      WHERE ' . $sql .
                    ' ORDER BY name ASC';
 

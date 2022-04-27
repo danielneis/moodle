@@ -2590,6 +2590,22 @@ $capabilities = array(
         ]
     ],
 
+    'moodle/contentbank:configurecustomfields' => [
+        'captype' => 'write',
+        'contextlevel' => CONTEXT_MODULE,
+        'archetypes' => [
+            'manager' => CAP_ALLOW,
+        ],
+    ],
+
+    'moodle/contentbank:changelockedcustomfields' => [
+        'captype' => 'write',
+        'contextlevel' => CONTEXT_MODULE,
+        'archetypes' => [
+            'manager' => CAP_ALLOW,
+        ],
+    ],
+
     // Allow users to download course content.
     'moodle/course:downloadcoursecontent' => [
         'captype' => 'read',

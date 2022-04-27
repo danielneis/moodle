@@ -96,16 +96,19 @@ $PAGE->set_url(new \moodle_url('/contentbank/edit.php', $values));
 $PAGE->set_context($context);
 $PAGE->set_title($title);
 
+
 $PAGE->set_url(new \moodle_url('/contentbank/edit.php', $values));
 if ($context->id == \context_system::instance()->id) {
     $PAGE->set_context(context_course::instance($context->id));
 } else {
     $PAGE->set_context($context);
 }
-$breadcrumb = \core_contentbank\contentbank::make_breadcrumb($record->folderid, $context->id);
 
-foreach ($breadcrumb as $bc) {
-    $PAGE->navbar->add($bc['name'], $bc['link']);
+if (!empty($record->folderid)) {
+    $breadcrumb = \core_contentbank\contentbank::make_breadcrumb($record->folderid, $context->id);
+    foreach ($breadcrumb as $bc) {
+        $PAGE->navbar->add($bc['name'], $bc['link']);
+    }
 }
 
 if ($content) {

@@ -245,7 +245,9 @@ abstract class contenttype {
         $event = contentbank_content_viewed::create_from_record($content->get_content());
         $event->trigger();
 
-        return '';
+        $renderer = $PAGE->get_renderer('contenttype_document');
+        $renderable = new \core_contentbank\output\customfields($content);
+        return $renderer->render($renderable);
     }
 
     /**

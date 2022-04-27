@@ -24,7 +24,7 @@
 
 namespace core_contentbank\search;
 
-use contenttype_document\customfield\document_handler;
+use core_contentbank\customfield\content_handler;
 use core_customfield\data_controller;
 use core_customfield\field_controller;
 
@@ -65,7 +65,7 @@ class customfield extends \core_search\base {
             list ($contextjoin, $contextparams) = $this->get_course_level_context_restriction_sql($context, 'c', SQL_PARAMS_NAMED);
         }
 
-        $fields = document_handler::create()->get_fields();
+        $fields = content_handler::create()->get_fields();
         if (!$fields) {
             $fields = array();
         }
@@ -94,7 +94,7 @@ class customfield extends \core_search\base {
      */
     public function get_document($record, $options = array()) {
 
-        $handler = document_handler::create();
+        $handler = content_handler::create();
         $field = $handler->get_fields()[$record->fieldid];
         $data = data_controller::create(0, $record, $field);
 
@@ -158,7 +158,7 @@ class customfield extends \core_search\base {
      * @return \moodle_url
      */
     public function get_context_url(\core_search\document $doc) {
-        return new \moodle_url('/content/view.php', array('id' => $doc->get('courseid')));
+        return new \moodle_url('/contentbank/view.php', array('id' => $doc->get('courseid')));
     }
 
     /**

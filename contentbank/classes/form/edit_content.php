@@ -82,6 +82,7 @@ abstract class edit_content extends moodleform {
         if ($content) {
             $handler->instance_form_before_set_data($content);
         }
+        $this->set_data($content);
     }
 
     /**

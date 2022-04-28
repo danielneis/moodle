@@ -224,7 +224,7 @@ class contentbank {
             $sql .= ' AND (' . $DB->sql_like('c.name', ':name', false, false);
             $params['name'] = '%' . $DB->sql_like_escape($search) . '%';
 
-            $fields = \contenttype_document\customfield\document_handler::create()->get_fields();
+            $fields = \core_contentbank\customfield\content_handler::create()->get_fields();
             if (!$fields) {
                 $fields = array();
             }

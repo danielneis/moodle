@@ -71,18 +71,18 @@ class customfield extends \core_search\base {
         }
         list($fieldsql, $fieldparam) = $DB->get_in_or_equal(array_keys($fields), SQL_PARAMS_NAMED, 'fld', true, 0);
 
-        // Restrict recordset to CONTEXT_COURSE (since we are implementing it to core_course\search).
         $sql = "SELECT d.*
                   FROM {customfield_data} d
-                  JOIN {contentbank_content} c ON c.id = d.instanceid
-                  JOIN {context} cnt ON cnt.instanceid = c.id
+                  JOIN {contentbank_content} c
+                    ON c.id = d.instanceid
+                  JOIN {context} cnt
+                    ON cnt.id = d.contextid
            {$contextjoin}
                  WHERE d.timemodified >= :modifiedfrom
-                   AND cnt.contextlevel = :contextlevel
                    AND d.fieldid {$fieldsql}
               ORDER BY d.timemodified ASC";
         return $DB->get_recordset_sql($sql , array_merge($contextparams,
-            ['modifiedfrom' => $modifiedfrom, 'contextlevel' => CONTEXT_COURSE], $fieldparam));
+            ['modifiedfrom' => $modifiedfrom], $fieldparam));
     }
 
     /**
@@ -93,17 +93,26 @@ class customfield extends \core_search\base {
      * @return \core_search\document|bool
      */
     public function get_document($record, $options = array()) {
+        global $SITE;
 
         $handler = content_handler::create();
         $field = $handler->get_fields()[$record->fieldid];
         $data = data_controller::create(0, $record, $field);
+
+        $context = \context::instance_by_id($record->contextid);
+        if ($course = $context->get_course_context(false)) {
+            $courseid = $course->instanceid;
+        } else {
+            $courseid = $SITE->id;
+        }
 
         // Prepare associative array with data from DB.
         $doc = \core_search\document_factory::instance($record->id, $this->componentname, $this->areaname);
         $doc->set('title', content_to_text($field->get('name'), false));
         $doc->set('content', content_to_text($data->export_value(), FORMAT_HTML));
         $doc->set('contextid', $record->contextid);
-        $doc->set('courseid', $record->instanceid);
+        $doc->set('courseid', $courseid);
+        $doc->set('itemid', $record->instanceid);
         $doc->set('owneruserid', \core_search\manager::NO_OWNER_ID);
         $doc->set('modified', $record->timemodified);
 
@@ -128,37 +137,38 @@ class customfield extends \core_search\base {
         $coursesql = '
             SELECT c.*
               FROM {contentbank_content} c
-              JOIN {customfield_data} d ON d.instanceid = c.id
-             WHERE d.id = :dataid';
+             WHERE c.id = :id';
 
-        $record = $DB->get_record_sql($coursesql, ['dataid' => $id]);
+        $record = $DB->get_record_sql($coursesql, ['id' => $id]);
         $managerclass = "\\{$record->contenttype}\\content";
         $content = new $managerclass($record);
 
         if ($content->is_view_allowed()) {
-            return \core_search\manager::ACCESS_GRANTED;
+            if (has_capability('moodle/contentbank:configurecustomfields', \context::instance_by_id($record->contextid))) {
+                return \core_search\manager::ACCESS_GRANTED;
+            }
         }
         return \core_search\manager::ACCESS_DENIED;
     }
 
     /**
-     * Link to the course.
+     * Link to content bank.
      *
      * @param \core_search\document $doc
      * @return \moodle_url
      */
     public function get_doc_url(\core_search\document $doc) {
-        return $this->get_context_url($doc);
+        return new \moodle_url('/contentbank/view.php', ['id' => $doc->get('itemid')]);
     }
 
     /**
-     * Link to the course.
+     * Link to content bank.
      *
      * @param \core_search\document $doc
      * @return \moodle_url
      */
     public function get_context_url(\core_search\document $doc) {
-        return new \moodle_url('/contentbank/view.php', array('id' => $doc->get('courseid')));
+        return new \moodle_url('/contentbank/view.php', ['id' => $doc->get('itemid')]);
     }
 
     /**

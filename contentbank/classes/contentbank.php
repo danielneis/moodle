@@ -179,10 +179,11 @@ class contentbank {
      * @param  array $contenttypenames Optional array with the list of content-type names to search.
      * @param  int $folderid Optional folderid to search.
      * @param  bool $subfolders In case folderid is provided, if it will search subfolders.
+     * @param  bool $deleted If search within deleted items or not deleted (default).
      * @return array The contents for the enabled contentbank-type plugins having $search as name and placed in $contextid.
      */
     public function search_contents(?string $search = null, ?int $contextid = 0,
-        ?array $contenttypenames = null, ?int $folderid = 0, ?bool $subfolders = false): array {
+        ?array $contenttypenames = null, ?int $folderid = 0, ?bool $subfolders = false, ?bool $deleted = false): array {
         global $DB;
 
         $contents = [];
@@ -215,8 +216,11 @@ class contentbank {
             $params['folderpath'] = $DB->sql_like_escape($folderpath) . '%';
             $sql .= ' AND ' . $DB->sql_like('f.path', ':folderpath', false, false) ;
         } else {
-            $params['folderid'] = $folderid;
-            $sql .= ' AND folderid = :folderid ';
+            // When listing deleted files we don't care about original folder.
+            if (!$deleted) {
+                $params['folderid'] = $folderid;
+                $sql .= ' AND folderid = :folderid ';
+            }
         }
 
         // Search for contents having this string (if defined).

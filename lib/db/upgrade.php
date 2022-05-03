@@ -2740,5 +2740,27 @@ function xmldb_main_upgrade($oldversion) {
         upgrade_main_savepoint(true, 2021051705.08);
     }
 
+    if ($oldversion < 2022050300.00) {
+
+        // Define field deleted to be added to contentbank_content.
+        $table = new xmldb_table('contentbank_content');
+        $field = new xmldb_field('deleted', XMLDB_TYPE_INTEGER, '1', null, XMLDB_NOTNULL, null, '0', 'timemodified');
+
+        // Conditionally launch add field deleted.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        $index = new xmldb_index('deleted', XMLDB_INDEX_NOTUNIQUE, ['deleted']);
+
+        // Conditionally launch add index deleted.
+        if (!$dbman->index_exists($table, $index)) {
+            $dbman->add_index($table, $index);
+        }
+
+        // Main savepoint reached.
+        upgrade_main_savepoint(true, 2022050300.00);
+    }
+
     return true;
 }

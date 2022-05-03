@@ -145,6 +145,17 @@ if (has_capability('moodle/contentbank:createfolder', $context)) {
     }
 }
 
+if (has_capability('moodle/contentbank:deleteanycontent', $context)) {
+    $trashlabel = get_string('trash', 'contentbank');
+    $actionmenu->add_secondary_action(new action_menu_link(
+        new moodle_url('/contentbank/trash.php'),
+        new pix_icon('i/trash', $trashlabel),
+        $trashlabel,
+        false,
+        []
+    ));
+}
+
 // Add the cog menu to the header.
 $PAGE->add_header_action(html_writer::div(
     $OUTPUT->render($actionmenu),

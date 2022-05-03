@@ -286,6 +286,15 @@ abstract class content {
     }
 
     /**
+     * Return true if the content is deleted.
+     *
+     * @return boolean
+     */
+    public function is_deleted(): int {
+        return $this->content->deleted;
+    }
+
+    /**
      * Import a file as a valid content.
      *
      * By default, all content has a public file area to interact with the content bank

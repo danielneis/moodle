@@ -61,6 +61,80 @@ $PAGE->add_body_class('limitedwidth');
 $PAGE->set_pagetype('contentbank');
 $PAGE->set_secondary_active_tab('contentbank');
 
+if (has_capability('moodle/contentbank:createfolder', $context)) {
+    if ($folderid) {
+        $folderrecord = $DB->get_record('contentbank_folders', ['id' => $folderid, 'contextid' => $contextid]);
+        $folder = new \core_contentbank\folder($folderrecord);
+
+        $label = get_string('renamefolder', 'core_contentbank');
+
+        $attributes = [
+            'data-action' => 'renamefolder',
+            'data-contextid' => $contextid,
+            'data-folderid' => $folderid,
+        ];
+
+        $actionmenu->add_secondary_action(new action_menu_link(
+            new moodle_url('#'),
+            new pix_icon('i/edit', $label),
+            $label,
+            false,
+            $attributes
+        ));
+
+        $PAGE->requires->js_call_amd(
+            'core_contentbank/rename_folder',
+            'initModal',
+            [
+                '[data-action="renamefolder"]',
+                \core_contentbank\form\rename_folder::class,
+                $contextid, $folderrecord->parent, $folderid, $folderrecord->name
+            ]);
+
+
+        if ($folder->is_empty()) {
+            $label = get_string('deletefolder', 'core_contentbank');
+
+            $attributes = [
+                'data-action' => 'deletefolder',
+                'data-contextid' => $contextid,
+                'data-parentid' => $folderid,
+            ];
+
+            $actionmenu->add_secondary_action(new action_menu_link(
+                new moodle_url('#'),
+                new pix_icon('i/delete', $label),
+                $label,
+                false,
+                $attributes
+            ));
+
+            $PAGE->requires->js_call_amd(
+                'core_contentbank/delete_folder',
+                'initModal',
+                ['[data-action="deletefolder"]', $contextid, $folderid]);
+        }
+    }
+}
+
+if (has_capability('moodle/contentbank:deleteanycontent', $context)) {
+    $trashlabel = get_string('trash', 'contentbank');
+    $actionmenu->add_secondary_action(new action_menu_link(
+        new moodle_url('/contentbank/trash.php'),
+        new pix_icon('i/trash', $trashlabel),
+        $trashlabel,
+        false,
+        []
+    ));
+}
+
+// Add the cog menu to the header.
+$PAGE->add_header_action(html_writer::div(
+    $OUTPUT->render($actionmenu),
+    'd-print-none',
+    ['id' => 'region-main-settings-menu']
+));
+
 // Get all contents managed by active plugins where the user has permission to render them.
 $contenttypes = [];
 $enabledcontenttypes = $cb->get_enabled_content_types();

@@ -177,9 +177,12 @@ class contentbank {
      * @param  string|null $search Optional string to search (for now it will search only into the name).
      * @param  int $contextid Optional contextid to search.
      * @param  array $contenttypenames Optional array with the list of content-type names to search.
+     * @param  bool $deleted If search within deleted items or not deleted (default).
      * @return array The contents for the enabled contentbank-type plugins having $search as name and placed in $contextid.
      */
-    public function search_contents(?string $search = null, ?int $contextid = 0, ?array $contenttypenames = null): array {
+    public function search_contents(?string $search = null, ?int $contextid = 0,
+        ?array $contenttypenames = null, ?bool $deleted = false): array {
+
         global $DB;
 
         $contents = [];
@@ -213,7 +216,14 @@ class contentbank {
             $params['name'] = '%' . $DB->sql_like_escape($search) . '%';
         }
 
+        if ($deleted) {
+            $sql .= ' AND deleted = 1';
+        } else {
+            $sql .= ' AND deleted = 0';
+        }
+
         $records = $DB->get_records_select('contentbank_content', $sql, $params, 'name ASC');
+
         foreach ($records as $record) {
             $content = $this->get_content_from_id($record->id);
             if ($content->is_view_allowed()) {

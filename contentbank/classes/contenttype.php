@@ -27,6 +27,7 @@ namespace core_contentbank;
 use core\event\contentbank_content_created;
 use core\event\contentbank_content_deleted;
 use core\event\contentbank_content_viewed;
+use core\event\contentbank_content_updated;
 use stored_file;
 use Exception;
 use moodle_url;
@@ -150,7 +151,7 @@ abstract class contenttype {
      * @param  content $content The content to delete.
      * @return boolean true if the content has been deleted; false otherwise.
      */
-    public function delete_content(content $content): bool {
+    public function delete_content_forever(content $content): bool {
         global $DB;
 
         // Delete the file if it exists.
@@ -164,6 +165,74 @@ abstract class contenttype {
             // Trigger an event for deleting this content.
             $record = $content->get_content();
             $event = contentbank_content_deleted::create([
+                'objectid' => $content->get_id(),
+                'relateduserid' => $record->usercreated,
+                'context' => \context::instance_by_id($record->contextid),
+                'other' => [
+                    'contenttype' => $content->get_content_type(),
+                    'name' => $content->get_name()
+                ]
+            ]);
+            $event->add_record_snapshot('contentbank_content', $record);
+            $event->trigger();
+        }
+        return $result;
+    }
+
+    /**
+     * Marks this content as deleted (put in trash).
+     * This method can be overwritten by the plugins if they need to delete specific information.
+     *
+     * @param  content $content The content to delete.
+     * @return boolean true if the content has been deleted; false otherwise.
+     */
+    public function delete_content(content $content): bool {
+        global $DB;
+
+        $deletedcontent = (object)[
+            'id' => $content->get_id(),
+            'deleted' => 1
+        ];
+        // Update the contentbank DB entry.
+        $result = $DB->update_record('contentbank_content', $deletedcontent);
+        if ($result) {
+            // Trigger an event for deleting this content.
+            $record = $content->get_content();
+            $event = contentbank_content_updated::create([
+                'objectid' => $content->get_id(),
+                'relateduserid' => $record->usercreated,
+                'context' => \context::instance_by_id($record->contextid),
+                'other' => [
+                    'contenttype' => $content->get_content_type(),
+                    'name' => $content->get_name()
+                ]
+            ]);
+            $event->add_record_snapshot('contentbank_content', $record);
+            $event->trigger();
+        }
+        return $result;
+    }
+
+    /**
+     * Marks this content as not deleted (restore from trash).
+     * This method can be overwritten by the plugins if they need to restore specific information.
+     *
+     * @param  content $content The content to restore.
+     * @return boolean true if the content has been restored; false otherwise.
+     */
+    public function restore_content(content $content): bool {
+        global $DB;
+
+        $deletedcontent = (object)[
+            'id' => $content->get_id(),
+            'deleted' => 0
+        ];
+        // Update the contentbank DB entry.
+        $result = $DB->update_record('contentbank_content', $deletedcontent);
+        if ($result) {
+            // Trigger an event for deleting this content.
+            $record = $content->get_content();
+            $event = contentbank_content_updated::create([
                 'objectid' => $content->get_id(),
                 'relateduserid' => $record->usercreated,
                 'context' => \context::instance_by_id($record->contextid),

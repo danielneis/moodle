@@ -1,0 +1,93 @@
+<?php
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+/**
+ * List trashed content in content bank.
+ *
+ * @package    core_contentbank
+ * @copyright  2022 Daniel Neis Araujo <daniel@adapta.online>
+ * @copyright  2020 Amaia Anabitarte <amaia@moodle.com>
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+
+require('../config.php');
+
+require_login();
+
+$contextid = optional_param('contextid', \context_system::instance()->id, PARAM_INT);
+$search = optional_param('search', '', PARAM_CLEAN);
+$context = context::instance_by_id($contextid, MUST_EXIST);
+
+$cb = new \core_contentbank\contentbank();
+if (!$cb->is_context_allowed($context)) {
+    print_error('contextnotallowed', 'core_contentbank');
+}
+
+$statusmsg = optional_param('statusmsg', '', PARAM_ALPHANUMEXT);
+$errormsg = optional_param('errormsg', '', PARAM_ALPHANUMEXT);
+
+$title = get_string('contentbank');
+\core_contentbank\helper::get_page_ready($context, $title);
+if ($PAGE->course) {
+    require_login($PAGE->course->id);
+}
+$url = new moodle_url('/contentbank/trash.php');
+$PAGE->set_url($url);
+$PAGE->set_context($context);
+$PAGE->set_title($title);
+$PAGE->set_heading($title);
+$PAGE->set_pagetype('contentbank');
+
+$PAGE->navbar->add(get_string('trash', 'contentbank'), $url);
+
+// Create the cog menu with all the secondary actions, such as delete, rename...
+$actionmenu = new action_menu();
+$actionmenu->set_alignment(action_menu::TR, action_menu::BR);
+
+// Get all contents managed by active plugins where the user has permission to render them.
+$contenttypes = [];
+$enabledcontenttypes = $cb->get_enabled_content_types();
+foreach ($enabledcontenttypes as $contenttypename) {
+    $contenttypeclass = "\\contenttype_$contenttypename\\contenttype";
+    $contenttype = new $contenttypeclass($context);
+    if ($contenttype->can_access()) {
+        $contenttypes[] = $contenttypename;
+    }
+}
+
+$foldercontents = $cb->search_contents($search, $contextid, $contenttypes, 0, false, true);
+
+// Get the toolbar ready.
+$toolbar = array();
+
+echo $OUTPUT->header();
+echo $OUTPUT->box_start('generalbox');
+
+// If needed, display notifications.
+if ($errormsg !== '' && get_string_manager()->string_exists($errormsg, 'core_contentbank')) {
+    $errormsg = get_string($errormsg, 'core_contentbank');
+    echo $OUTPUT->notification($errormsg);
+} else if ($statusmsg !== '' && get_string_manager()->string_exists($statusmsg, 'core_contentbank')) {
+    $statusmsg = get_string($statusmsg, 'core_contentbank');
+    echo $OUTPUT->notification($statusmsg, 'notifysuccess');
+}
+
+// Render the contentbank contents.
+$folder = new \core_contentbank\output\bankcontent($foldercontents, $toolbar, $context, 0, []);
+echo $OUTPUT->render($folder);
+
+echo $OUTPUT->box_end();
+echo $OUTPUT->footer();

@@ -62,6 +62,7 @@ function($, Ajax, Notification, Str, Templates, Url, ModalFactory, ModalEvents) 
             var contentuses = $(this).data('uses');
             var contentid = $(this).data('contentid');
             var contextid = $(this).data('contextid');
+            var folderid = $(this).data('folderid');
 
             var strings = [
                 {
@@ -104,7 +105,7 @@ function($, Ajax, Notification, Str, Templates, Url, ModalFactory, ModalEvents) 
                 modal.setSaveButtonText(deleteButtonText);
                 modal.getRoot().on(ModalEvents.save, function() {
                     // The action is now confirmed, sending an action for it.
-                    return deleteContent(contentid, contextid);
+                    return deleteContent(contentid, contextid, folderid);
                 });
 
                 // Handle hidden event.
@@ -321,8 +322,9 @@ function($, Ajax, Notification, Str, Templates, Url, ModalFactory, ModalEvents) 
      *
      * @param {int} contentid The content to delete.
      * @param {int} contextid The contextid where the content belongs.
+     * @param {int} folderid The folderid where the content belongs.
      */
-    function deleteContent(contentid, contextid) {
+    function deleteContent(contentid, contextid, folderid) {
         var request = {
             methodname: 'core_contentbank_delete_content',
             args: {
@@ -340,7 +342,8 @@ function($, Ajax, Notification, Str, Templates, Url, ModalFactory, ModalEvents) 
 
         }).done(function(message) {
             var params = {
-                contextid: contextid
+                contextid: contextid,
+                folderid: folderid
             };
             if (requestType == 'success') {
                 params.statusmsg = message;

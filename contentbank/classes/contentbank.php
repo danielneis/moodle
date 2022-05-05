@@ -246,6 +246,12 @@ class contentbank {
             $params = array_merge($params, $fieldparam);
         }
 
+        if ($deleted) {
+            $sql .= ' AND c.deleted = 1';
+        } else {
+            $sql .= ' AND c.deleted = 0';
+        }
+
         $fullsql = 'SELECT c.*
                       FROM {contentbank_content} c
                       JOIN  {contentbank_folders} f

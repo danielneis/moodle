@@ -205,6 +205,7 @@ if ($contenttype->can_delete($content)) {
                     'data-uses' => count($content->get_uses()),
                     'data-contentid' => $content->get_id(),
                     'data-contextid' => $context->id,
+                    'data-folderid' => $content->get_folderid(),
                 ];
         $actionmenu->add_secondary_action(new action_menu_link(
             new moodle_url('#'),

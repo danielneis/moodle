@@ -144,7 +144,7 @@ if ($contenttype->can_manage($content)) {
         // Add the rename content item to the menu.
         $attributes = [
             'data-action' => 'renamecontent',
-            'data-contentname' => $content->get_name(),
+            'data-contentname' => $record->name,
             'data-contentid' => $content->get_id(),
         ];
         $actionmenu->add_secondary_action(new action_menu_link(

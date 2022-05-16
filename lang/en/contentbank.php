@@ -36,6 +36,7 @@ $string['contenttypenoaccess'] = 'You cannot view this {$a} instance.';
 $string['contenttypenoedit'] = 'You can not edit this content';
 $string['contentvisibilitychanged'] = 'The content has been made {$a}.';
 $string['contentvisibilitynotset'] = 'An error was encountered while trying to set the content visibility.';
+$string['contentupdated'] = 'The content has been updated.';
 $string['contextnotallowed'] = 'You are not allowed to access the content bank in this context.';
 $string['emptynamenotallowed'] = 'Empty name is not allowed';
 $string['eventcontentcreated'] = 'Content created';

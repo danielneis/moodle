@@ -153,6 +153,20 @@ class contentbank {
     }
 
     /**
+     * Returns the file name without extension.
+     *
+     * @param  string $filename The name of the file
+     * @return string The file without extension
+     */
+    public function remove_extension(string $filename) {
+        $dot = strrpos($filename, '.');
+        if ($dot === false) {
+            return $filename;
+        }
+        return strtolower(substr($filename, 0, $dot));
+    }
+
+    /**
      * Get the first content bank plugin supports a file extension.
      *
      * @param string $extension Content file extension
@@ -326,7 +340,7 @@ class contentbank {
         $plugin = $this->get_extension_supporter($extension, $context);
         $classname = '\\contenttype_'.$plugin.'\\contenttype';
         $record = new \stdClass();
-        $record->name = $filename;
+        $record->name = $this->remove_extension($filename);
         $record->usercreated = $userid;
         $record->folderid = $folderid;
         $contentype = new $classname($context);

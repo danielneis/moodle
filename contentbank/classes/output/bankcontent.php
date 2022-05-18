@@ -30,6 +30,7 @@ use templatable;
 use renderer_base;
 use stdClass;
 use core_contentbank\content;
+use core_customfield\output\field_data;
 
 /**
  * Class containing data for bank content
@@ -135,6 +136,7 @@ class bankcontent implements renderable, templatable {
             ];
         }
 
+        $handler = \core_contentbank\customfield\content_handler::create();
         foreach ($this->contents as $content) {
             $file = $content->get_file();
             $filesize = $file ? $file->get_filesize() : 0;
@@ -147,7 +149,7 @@ class bankcontent implements renderable, templatable {
                 $name = $content->get_name();
             }
             $author = \core_user::get_user($content->get_content()->usercreated);
-            $contentdata[] = array(
+            $currentcontentdata = array(
                 'name' => $name,
                 'title' => strtolower($name),
                 'link' => $contenttype->get_view_url($content),
@@ -160,6 +162,12 @@ class bankcontent implements renderable, templatable {
                 'author' => fullname($author),
                 'visibilityunlisted' => $content->get_visibility() == content::VISIBILITY_UNLISTED
             );
+            $instancedata = $handler->get_instance_data($content->get_id());
+            foreach ($instancedata as $d) {
+                $fd = new field_data($d);
+                $currentcontentdata['customfield_' . $fd->get_shortname()] = $fd->get_value();
+            }
+            $contentdata[] = $currentcontentdata;
         }
         $data->viewlist = get_user_preferences('core_contentbank_view_list');
         $data->contents = $contentdata;

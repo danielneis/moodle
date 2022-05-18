@@ -301,7 +301,7 @@ class contentbank {
 
         $fullsql = "SELECT c.*
                       FROM {contentbank_content} c
-                      JOIN {contentbank_folders} f
+                 LEFT JOIN {contentbank_folders} f
                         ON f.id = c.folderid
                      WHERE {$sql}
                      ORDER BY name ASC";

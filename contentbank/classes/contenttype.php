@@ -394,8 +394,22 @@ abstract class contenttype {
         if (!$this->is_feature_supported(self::CAN_UPLOAD)) {
             return false;
         }
-        if (user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'editingteacher']))) {
-            return true;
+        $folderid = optional_param('folderid', 0, PARAM_INT);
+        if ($folderid) {
+            $folderrecord = $DB->get_record('contentbank_folders', ['id' => $folderid, 'contextid' => $this->context->id]);
+            $foldersinpath = explode('/', $folderrecord->path);
+            $topfolder = $foldersinpath[1];
+            if ($DB->get_field('contentbank_folders', 'name', ['id' => $topfolder]) == 'Professores') {
+                $systemctx = \context_system::instance();
+                $canupload =
+                    user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'p_professor']), $systemctx->id) ||
+                    user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'p_materiais']), $systemctx->id) ||
+                    user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'p_administrador']), $systemctx->id) ||
+                    user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'p_colabobrador']), $systemctx->id);
+                if ($canupload) {
+                    return true;
+                }
+            }
         }
         if (!$this->can_access()) {
             return false;

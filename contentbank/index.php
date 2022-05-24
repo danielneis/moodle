@@ -198,9 +198,25 @@ if (has_capability('moodle/contentbank:useeditor', $context)) {
     }
 }
 
+if (isset($folderrecord)) {
+    $foldersinpath = explode('/', $folderrecord->path);
+    $topfolder = $foldersinpath[0];
+    if ($DB->get_field('contentbank_folders', 'name', ['id' => $topfolder]) == 'Professores') {
+        $systemctx = \context_system::instance();
+        $canupload =
+            user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'p_professor']), $systemctx->id) ||
+            user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'p_materiais']), $systemctx->id) ||
+            user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'p_administrador']), $systemctx->id) ||
+            user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'p_colabobrador']), $systemctx->id);
+    } else {
+        $canupload = has_capability('moodle/contentbank:upload', $context);
+    }
+} else {
+    $canupload = has_capability('moodle/contentbank:upload', $context);
+}
+
 // Place the Upload button in the toolbar.
-if (has_capability('moodle/contentbank:upload', $context) ||
-    user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'editingteacher']))) {
+if ($canupload) {
     // Don' show upload button if there's no plugin to support any file extension.
     $accepted = $cb->get_supported_extensions_as_string($context);
     if (!empty($accepted)) {

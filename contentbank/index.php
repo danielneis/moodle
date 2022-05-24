@@ -187,14 +187,15 @@ if (has_capability('moodle/contentbank:useeditor', $context)) {
 
 if (isset($folderrecord)) {
     $foldersinpath = explode('/', $folderrecord->path);
-    $topfolder = $foldersinpath[0];
+    $topfolder = $foldersinpath[1];
     if ($DB->get_field('contentbank_folders', 'name', ['id' => $topfolder]) == 'Professores') {
         $systemctx = \context_system::instance();
         $canupload =
             user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'p_professor']), $systemctx->id) ||
             user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'p_materiais']), $systemctx->id) ||
             user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'p_administrador']), $systemctx->id) ||
-            user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'p_colabobrador']), $systemctx->id);
+            user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'p_colabobrador']), $systemctx->id) ||
+            has_capability('moodle/contentbank:upload', $context);
     } else {
         $canupload = has_capability('moodle/contentbank:upload', $context);
     }

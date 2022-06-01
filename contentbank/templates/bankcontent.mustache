@@ -124,7 +124,10 @@ data-region="contentbank">
         <div class="content-bank">
             <div class="cb-navbar bg-light p-2 border-bottom">
                 <div class="cb-navbar-breadcrumb">
-                    {{#pix}} i/folder {{/pix}}
+                    <a href="{{{root}}}">{{#pix}} i/folder {{/pix}}</a>
+                    {{#breadcrumbs}}
+                     / <a href="{{{link}}}">{{name}}</a>
+                    {{/breadcrumbs}}
                 </div>
                 <div class="cb-navbar-totalsearch d-none">
                 </div>

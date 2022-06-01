@@ -97,6 +97,8 @@ class bankcontent implements renderable, templatable {
             $this->path = $DB->get_field('contentbank_folders', 'path', ['id' => $folderid]);
         }
         $this->folders = $folders;
+        $this->folderid = $folderid;
+        $this->breadcrumbs = \core_contentbank\contentbank::make_breadcrumb($folderid, $this->context->id);
     }
 
     /**
@@ -113,8 +115,10 @@ class bankcontent implements renderable, templatable {
 
         $data = new stdClass();
 
-        $url = new \moodle_url('/contentbank/index.php', ['contextid' => $this->context->id]);
-        $data->root = $url->out();
+        $rooturl = new \moodle_url('/contentbank/index.php', ['contextid' => $this->context->id]);
+        $data->root = $rooturl->out();
+
+        $data->breadcrumbs = $this->breadcrumbs;
 
         $contentdata = [];
         foreach ($this->folders as $folder) {

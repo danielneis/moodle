@@ -62,13 +62,9 @@ $PAGE->add_body_class('limitedwidth');
 $PAGE->set_pagetype('contentbank');
 $PAGE->set_secondary_active_tab('contentbank');
 
-foreach (\core_contentbank\contentbank::make_breadcrumb($folderid, $contextid) as $bc) {
-    $PAGE->navbar->add($bc['name'], $bc['link']);
-}
-
 // Create the cog menu with all the secondary actions, such as delete, rename...
 $actionmenu = new action_menu();
-$actionmenu->set_alignment(action_menu::TR, action_menu::BR);
+$actionmenu->set_menu_left();
 if (has_capability('moodle/contentbank:createfolder', $context)) {
 
     $label = get_string('newfolder', 'core_contentbank');

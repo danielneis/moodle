@@ -67,27 +67,6 @@ $actionmenu = new action_menu();
 $actionmenu->set_menu_left();
 if (has_capability('moodle/contentbank:createfolder', $context)) {
 
-    $label = get_string('newfolder', 'core_contentbank');
-
-    $attributes = [
-        'data-action' => 'createfolder',
-        'data-contextid' => $contextid,
-        'data-parentid' => $folderid,
-    ];
-
-    $actionmenu->add_secondary_action(new action_menu_link(
-        new moodle_url('#'),
-        new pix_icon('a/create_folder', $label),
-        $label,
-        false,
-        $attributes
-    ));
-
-    $PAGE->requires->js_call_amd(
-        'core_contentbank/create_folder',
-        'initModal',
-        ['[data-action="createfolder"]', \core_contentbank\form\create_folder::class, $contextid, $folderid]);
-
     if ($folderid) {
         $folderrecord = $DB->get_record('contentbank_folders', ['id' => $folderid, 'contextid' => $contextid]);
         $folder = new \core_contentbank\folder($folderrecord);
@@ -141,6 +120,17 @@ if (has_capability('moodle/contentbank:createfolder', $context)) {
                 ['[data-action="deletefolder"]', $contextid, $folderid]);
         }
     }
+}
+
+if (has_capability('moodle/contentbank:deleteanycontent', $context)) {
+    $trashlabel = get_string('trash', 'contentbank');
+    $actionmenu->add_secondary_action(new action_menu_link(
+        new moodle_url('/contentbank/trash.php'),
+        new pix_icon('i/trash', $trashlabel),
+        $trashlabel,
+        false,
+        []
+    ));
 }
 
 // Add the cog menu to the header.

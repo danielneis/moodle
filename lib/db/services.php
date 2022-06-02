@@ -2777,6 +2777,22 @@ $functions = array(
         'ajax'          => 'true',
         'capabilities'  => 'moodle/contentbank:manageowncontent',
     ],
+    'core_contentbank_delete_content_forever' => [
+        'classname'     => 'core_contentbank\external\delete_content_forever',
+        'classpath'     => '',
+        'description'   => 'Delete a content from the content bank forever.',
+        'type'          => 'write',
+        'ajax'          => 'true',
+        'capabilities'  => 'moodle/contentbank:deleteanycontent',
+    ],
+    'core_contentbank_restore_content' => [
+        'classname'     => 'core_contentbank\external\restore_content',
+        'classpath'     => '',
+        'description'   => 'Restore a content from the content bank\'s trash.',
+        'type'          => 'write',
+        'ajax'          => 'true',
+        'capabilities'  => 'moodle/contentbank:deleteanycontent',
+    ],
     'core_create_userfeedback_action_record' => [
         'classname'     => 'core\external\record_userfeedback_action',
         'classpath'     => '',

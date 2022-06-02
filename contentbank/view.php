@@ -72,8 +72,12 @@ if ($context->id == \context_system::instance()->id) {
     $PAGE->set_context($context);
 }
 
-foreach (\core_contentbank\contentbank::make_breadcrumb($record->folderid, $context->id) as $bc) {
-    $PAGE->navbar->add($bc['name'], $bc['link']);
+if ($content->is_deleted()) {
+    $PAGE->navbar->add(get_string('trash', 'contentbank'), new moodle_url('/contentbank/trash.php', ['contextid' => $context->id]));
+} else {
+    foreach (\core_contentbank\contentbank::make_breadcrumb($record->folderid, $context->id) as $bc) {
+        $PAGE->navbar->add($bc['name'], $bc['link']);
+    }
 }
 $PAGE->navbar->add($record->name);
 
@@ -83,6 +87,141 @@ $PAGE->set_heading($pageheading);
 $PAGE->set_pagetype('contentbank');
 $PAGE->set_pagelayout('incourse');
 $PAGE->set_secondary_active_tab('contentbank');
+
+// Create the cog menu with all the secondary actions, such as delete, rename...
+$actionmenu = new action_menu();
+$actionmenu->set_alignment(action_menu::TR, action_menu::BR);
+if ($contenttype->can_manage($content)) {
+    if ($content->is_deleted()) {
+        // Add the restore content forever item to the menu.
+        $attributes = [
+                    'data-action' => 'restorecontent',
+                    'data-contentname' => $content->get_name(),
+                    'data-uses' => count($content->get_uses()),
+                    'data-contentid' => $content->get_id(),
+                    'data-contextid' => $context->id,
+                ];
+        $actionmenu->add_secondary_action(new action_menu_link(
+            new moodle_url('#'),
+            new pix_icon('e/restore_draft', get_string('restorecontent', 'contentbank')),
+            get_string('restorecontent', 'contentbank'),
+            false,
+            $attributes
+        ));
+    } else {
+        // Add the visibility item to the menu.
+        switch($content->get_visibility()) {
+            case content::VISIBILITY_UNLISTED:
+                $visibilitylabel = get_string('visibilitysetpublic', 'core_contentbank');
+                $newvisibility = content::VISIBILITY_PUBLIC;
+                $visibilityicon = 't/hide';
+                break;
+            case content::VISIBILITY_PUBLIC:
+                $visibilitylabel = get_string('visibilitysetunlisted', 'core_contentbank');
+                $newvisibility = content::VISIBILITY_UNLISTED;
+                $visibilityicon = 't/show';
+                break;
+            default:
+                print_error('contentvisibilitynotfound', 'error', $returnurl, $content->get_visibility());
+                break;
+        }
+
+        $attributes = [
+            'data-action' => 'setcontentvisibility',
+            'data-visibility' => $newvisibility,
+            'data-contentid' => $content->get_id(),
+        ];
+        $actionmenu->add_secondary_action(new action_menu_link(
+            new moodle_url('#'),
+            new pix_icon($visibilityicon, $visibilitylabel),
+            $visibilitylabel,
+            false,
+            $attributes
+        ));
+
+        // Add the rename content item to the menu.
+        $attributes = [
+            'data-action' => 'renamecontent',
+            'data-contentname' => $content->get_name(),
+            'data-contentid' => $content->get_id(),
+        ];
+        $actionmenu->add_secondary_action(new action_menu_link(
+            new moodle_url('#'),
+            new pix_icon('e/styleparagraph', get_string('rename')),
+            get_string('rename'),
+            false,
+            $attributes
+        ));
+
+        if ($contenttype->can_upload()) {
+            $actionmenu->add_secondary_action(new action_menu_link(
+                new moodle_url('/contentbank/view.php', ['contextid' => $context->id, 'id' => $content->get_id()]),
+                new pix_icon('i/upload', get_string('upload')),
+                get_string('replacecontent', 'contentbank'),
+                false,
+                ['data-action' => 'upload']
+            ));
+            $PAGE->requires->js_call_amd(
+                'core_contentbank/upload',
+                'initModal',
+                ['[data-action=upload]', \core_contentbank\form\upload_files::class, $context->id, $content->get_id()]
+            );
+        }
+    }
+}
+
+if ($contenttype->can_download($content)) {
+    // Add the download content item to the menu.
+    $actionmenu->add_secondary_action(new action_menu_link(
+        new moodle_url($contenttype->get_download_url($content)),
+        new pix_icon('t/download', get_string('download')),
+        get_string('download'),
+        false
+    ));
+}
+if ($contenttype->can_delete($content)) {
+    if ($content->is_deleted()) {
+        // Add the delete content forever item to the menu.
+        $attributes = [
+                    'data-action' => 'deletecontentforever',
+                    'data-contentname' => $content->get_name(),
+                    'data-uses' => count($content->get_uses()),
+                    'data-contentid' => $content->get_id(),
+                    'data-contextid' => $context->id,
+                ];
+        $actionmenu->add_secondary_action(new action_menu_link(
+            new moodle_url('#'),
+            new pix_icon('t/delete', get_string('deleteforever', 'contentbank')),
+            get_string('deleteforever', 'contentbank'),
+            false,
+            $attributes
+        ));
+    } else {
+        // Add the delete content item to the menu.
+        $attributes = [
+                    'data-action' => 'deletecontent',
+                    'data-contentname' => $content->get_name(),
+                    'data-uses' => count($content->get_uses()),
+                    'data-contentid' => $content->get_id(),
+                    'data-contextid' => $context->id,
+                    'data-folderid' => $content->get_folderid(),
+                ];
+        $actionmenu->add_secondary_action(new action_menu_link(
+            new moodle_url('#'),
+            new pix_icon('t/delete', get_string('delete')),
+            get_string('delete'),
+            false,
+            $attributes
+        ));
+    }
+}
+
+// Add the cog menu to the header.
+$PAGE->add_header_action(html_writer::div(
+    $OUTPUT->render($actionmenu),
+    'd-print-none',
+    ['id' => 'region-main-settings-menu']
+));
 
 echo $OUTPUT->header();
 

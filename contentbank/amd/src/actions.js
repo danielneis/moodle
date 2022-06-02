@@ -40,6 +40,8 @@ function($, Ajax, Notification, Str, Templates, Url, ModalFactory, ModalEvents) 
         DELETE_CONTENT: '[data-action="deletecontent"]',
         RENAME_CONTENT: '[data-action="renamecontent"]',
         SET_CONTENT_VISIBILITY: '[data-action="setcontentvisibility"]',
+        RESTORE_CONTENT: '[data-action="restorecontent"]',
+        DELETE_CONTENT_FOREVER: '[data-action="deletecontentforever"]',
     };
 
     /**
@@ -60,6 +62,7 @@ function($, Ajax, Notification, Str, Templates, Url, ModalFactory, ModalEvents) 
             var contentuses = $(this).data('uses');
             var contentid = $(this).data('contentid');
             var contextid = $(this).data('contextid');
+            var folderid = $(this).data('folderid');
 
             var strings = [
                 {
@@ -102,7 +105,7 @@ function($, Ajax, Notification, Str, Templates, Url, ModalFactory, ModalEvents) 
                 modal.setSaveButtonText(deleteButtonText);
                 modal.getRoot().on(ModalEvents.save, function() {
                     // The action is now confirmed, sending an action for it.
-                    return deleteContent(contentid, contextid);
+                    return deleteContent(contentid, contextid, folderid);
                 });
 
                 // Handle hidden event.
@@ -190,6 +193,128 @@ function($, Ajax, Notification, Str, Templates, Url, ModalFactory, ModalEvents) 
 
             setContentVisibility(contentid, visibility);
         });
+
+        $(ACTIONS.DELETE_CONTENT_FOREVER).click(function(e) {
+            e.preventDefault();
+
+            var contentname = $(this).data('contentname');
+            var contentuses = $(this).data('uses');
+            var contentid = $(this).data('contentid');
+            var contextid = $(this).data('contextid');
+
+            var strings = [
+                {
+                    key: 'deletecontentforever',
+                    component: 'core_contentbank'
+                },
+                {
+                    key: 'deletecontentforeverconfirm',
+                    component: 'core_contentbank',
+                    param: {
+                        name: contentname,
+                    }
+                },
+                {
+                    key: 'deletecontentconfirmlinked',
+                    component: 'core_contentbank',
+                },
+                {
+                    key: 'delete',
+                    component: 'core'
+                },
+            ];
+
+            var deleteButtonText = '';
+            Str.get_strings(strings).then(function(langStrings) {
+                var modalTitle = langStrings[0];
+                var modalContent = langStrings[1];
+                if (contentuses > 0) {
+                    modalContent += ' ' + langStrings[2];
+                }
+                deleteButtonText = langStrings[3];
+
+                return ModalFactory.create({
+                    title: modalTitle,
+                    body: modalContent,
+                    type: ModalFactory.types.SAVE_CANCEL,
+                    large: true
+                });
+            }).done(function(modal) {
+                modal.setSaveButtonText(deleteButtonText);
+                modal.getRoot().on(ModalEvents.save, function() {
+                    // The action is now confirmed, sending an action for it.
+                    return deleteContentForever(contentid, contextid);
+                });
+
+                // Handle hidden event.
+                modal.getRoot().on(ModalEvents.hidden, function() {
+                    // Destroy when hidden.
+                    modal.destroy();
+                });
+
+                // Show the modal.
+                modal.show();
+
+                return;
+            }).catch(Notification.exception);
+        });
+
+        $(ACTIONS.RESTORE_CONTENT).click(function(e) {
+            e.preventDefault();
+
+            var contentname = $(this).data('contentname');
+            var contentid = $(this).data('contentid');
+            var contextid = $(this).data('contextid');
+
+            var strings = [
+                {
+                    key: 'restorecontent',
+                    component: 'core_contentbank'
+                },
+                {
+                    key: 'restorecontentconfirm',
+                    component: 'core_contentbank',
+                    param: {
+                        name: contentname,
+                    }
+                },
+                {
+                    key: 'restore',
+                    component: 'core'
+                },
+            ];
+
+            var restoreButtonText = '';
+            Str.get_strings(strings).then(function(langStrings) {
+                var modalTitle = langStrings[0];
+                var modalContent = langStrings[1];
+                restoreButtonText = langStrings[2];
+
+                return ModalFactory.create({
+                    title: modalTitle,
+                    body: modalContent,
+                    type: ModalFactory.types.SAVE_CANCEL,
+                    large: true
+                });
+            }).done(function(modal) {
+                modal.setSaveButtonText(restoreButtonText);
+                modal.getRoot().on(ModalEvents.save, function() {
+                    // The action is now confirmed, sending an action for it.
+                    return restoreContent(contentid, contextid);
+                });
+
+                // Handle hidden event.
+                modal.getRoot().on(ModalEvents.hidden, function() {
+                    // Destroy when hidden.
+                    modal.destroy();
+                });
+
+                // Show the modal.
+                modal.show();
+
+                return;
+            }).catch(Notification.exception);
+        });
     };
 
     /**
@@ -197,8 +322,9 @@ function($, Ajax, Notification, Str, Templates, Url, ModalFactory, ModalEvents) 
      *
      * @param {int} contentid The content to delete.
      * @param {int} contextid The contextid where the content belongs.
+     * @param {int} folderid The folderid where the content belongs.
      */
-    function deleteContent(contentid, contextid) {
+    function deleteContent(contentid, contextid, folderid) {
         var request = {
             methodname: 'core_contentbank_delete_content',
             args: {
@@ -216,7 +342,8 @@ function($, Ajax, Notification, Str, Templates, Url, ModalFactory, ModalEvents) 
 
         }).done(function(message) {
             var params = {
-                contextid: contextid
+                contextid: contextid,
+                folderid: folderid
             };
             if (requestType == 'success') {
                 params.statusmsg = message;
@@ -313,6 +440,78 @@ function($, Ajax, Notification, Str, Templates, Url, ModalFactory, ModalEvents) 
             return;
         }).catch(Notification.exception);
     }
+
+    /**
+     * Delete content forever from the content bank.
+     *
+     * @param {int} contentid The content to delete.
+     * @param {int} contextid The contextid where the content belongs.
+     */
+    function deleteContentForever(contentid, contextid) {
+        var request = {
+            methodname: 'core_contentbank_delete_content_forever',
+            args: {
+                contentids: {contentid}
+            }
+        };
+
+        var requestType = 'success';
+        Ajax.call([request])[0].then(function(data) {
+            if (data.result) {
+                return 'contentdeleted';
+            }
+            requestType = 'error';
+            return 'contentnotdeleted';
+
+        }).done(function(message) {
+            var params = {
+                contextid: contextid
+            };
+            if (requestType == 'success') {
+                params.statusmsg = message;
+            } else {
+                params.errormsg = message;
+            }
+            // Redirect to the main content bank page and display the message as a notification.
+            window.location.href = Url.relativeUrl('contentbank/trash.php', params, false);
+        }).fail(Notification.exception);
+    }
+
+    /**
+     * Restore content from the content bank's trash.
+     *
+     * @param {int} contentid The content to restore.
+     */
+    function restoreContent(contentid) {
+        var request = {
+            methodname: 'core_contentbank_restore_content',
+            args: {
+                contentids: {contentid}
+            }
+        };
+
+        var requestType = 'success';
+        Ajax.call([request])[0].then(function(data) {
+            if (data.result) {
+                return 'contentrestored';
+            }
+            requestType = 'error';
+            return 'contentnotrestored';
+
+        }).done(function(message) {
+            var params = {
+                id: contentid
+            };
+            if (requestType == 'success') {
+                params.statusmsg = message;
+            } else {
+                params.errormsg = message;
+            }
+            // Redirect to the main content bank page and display the message as a notification.
+            window.location.href = Url.relativeUrl('contentbank/view.php', params, false);
+        }).fail(Notification.exception);
+    }
+
 
     return /** @alias module:core_contentbank/actions */ {
         // Public variables and functions.

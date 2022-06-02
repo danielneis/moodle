@@ -4531,6 +4531,8 @@ privatefiles,moodle|/user/files.php';
             $dbman->add_field($table, $field);
         }
         $index = new xmldb_index('parent', XMLDB_INDEX_NOTUNIQUE, ['parent']);
+
+        // Conditionally launch add index deleted.
         if (!$dbman->index_exists($table, $index)) {
             $dbman->add_index($table, $index);
         }
@@ -4539,7 +4541,29 @@ privatefiles,moodle|/user/files.php';
         upgrade_main_savepoint(true, 2022041900.04);
     }
 
-    if ($oldversion < 2021051705.08) {
+    if ($oldversion < 2022050300.00) {
+
+        // Define field deleted to be added to contentbank_content.
+        $table = new xmldb_table('contentbank_content');
+        $field = new xmldb_field('deleted', XMLDB_TYPE_INTEGER, '1', null, XMLDB_NOTNULL, null, '0', 'timemodified');
+
+        // Conditionally launch add field deleted.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        $index = new xmldb_index('deleted', XMLDB_INDEX_NOTUNIQUE, ['deleted']);
+
+        // Conditionally launch add index deleted.
+        if (!$dbman->index_exists($table, $index)) {
+            $dbman->add_index($table, $index);
+        }
+
+        // Main savepoint reached.
+        upgrade_main_savepoint(true, 2022050300.00);
+    }
+
+    if ($oldversion < 2022050300.01) {
 
         // Rename field parent on table contentbank_content to NEWNAMEGOESHERE.
         $table = new xmldb_table('contentbank_content');
@@ -4549,7 +4573,7 @@ privatefiles,moodle|/user/files.php';
         $dbman->rename_field($table, $field, 'folderid');
 
         // Main savepoint reached.
-        upgrade_main_savepoint(true, 2021051705.08);
+        upgrade_main_savepoint(true, 2022050300.01);
     }
 
     return true;

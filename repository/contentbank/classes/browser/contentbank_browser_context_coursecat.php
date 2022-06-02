@@ -74,7 +74,7 @@ class contentbank_browser_context_coursecat extends contentbank_browser {
 
         $canaccesschildcontent = false;
         foreach ($this->get_child_contexts() as $childcontext) {
-            $browser = \repository_contentbank\helper::get_contentbank_browser($childcontext);
+            $browser = \repository_contentbank\helper::get_contentbank_browser($childcontext, $this->folderid);
             if ($canaccesschildcontent = $browser->can_access_content()) {
                 break;
             }

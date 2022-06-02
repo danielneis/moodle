@@ -178,10 +178,11 @@ class contentbank {
      * @param  int $contextid Optional contextid to search.
      * @param  array $contenttypenames Optional array with the list of content-type names to search.
      * @param  int $folderid Optional folderid to search.
+     * @param  bool $subfolders In case folderid is provided, if it will search subfolders.
      * @return array The contents for the enabled contentbank-type plugins having $search as name and placed in $contextid.
      */
     public function search_contents(?string $search = null, ?int $contextid = 0,
-        ?array $contenttypenames = null, ?int $folderid = 0): array {
+        ?array $contenttypenames = null, ?int $folderid = 0, ?bool $subfolders = false): array {
         global $DB;
 
         $contents = [];
@@ -209,7 +210,11 @@ class contentbank {
             $sql .= ' AND contextid = :contextid ';
         }
 
-        if ($folderid) {
+        if ($subfolders) {
+            $folderpath = $DB->get_field('contentbank_folders', 'path', ['id' => $folderid]);
+            $params['folderpath'] = $DB->sql_like_escape($folderpath) . '%';
+            $sql .= ' AND ' . $DB->sql_like('f.path', ':folderpath', false, false) ;
+        } else {
             $params['folderid'] = $folderid;
             $sql .= ' AND folderid = :folderid ';
         }

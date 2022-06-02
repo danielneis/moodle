@@ -64,6 +64,16 @@ class bankcontent implements renderable, templatable {
      */
     private $allowedcourses;
 
+    /*
+     * @var string    Path of the folder.
+     */
+    private $path = '/';
+
+    /**
+     * @var \core_contentbank\folder[]    Array of folders.
+     */
+    private $folders;
+
     /**
      * Construct this renderable.
      *
@@ -71,12 +81,24 @@ class bankcontent implements renderable, templatable {
      * @param array $toolbar List of content bank toolbar options.
      * @param \context $context Optional context to check (default null)
      * @param contentbank $cb Contenbank object.
+     * @param int $folderid   Current folder id.
+     * @param \core_contentbank\folder[] $folders   Array of folders.
      */
-    public function __construct(array $contents, array $toolbar, \context $context = null, contentbank $cb) {
+    public function __construct(array $contents, array $toolbar, \context $context = null, contentbank $cb,
+        int $folderid, array $folders) {
+
+        global $DB;
+
         $this->contents = $contents;
         $this->toolbar = $toolbar;
         $this->context = $context;
         list($this->allowedcategories, $this->allowedcourses) = $cb->get_contexts_with_capabilities_by_user();
+        if ($folderid) {
+            $this->path = $DB->get_field('contentbank_folders', 'path', ['id' => $folderid]);
+        }
+        $this->folders = $folders;
+        $this->folderid = $folderid;
+        $this->breadcrumbs = \core_contentbank\contentbank::make_breadcrumb($folderid, $this->context->id);
     }
 
     /**
@@ -92,7 +114,27 @@ class bankcontent implements renderable, templatable {
         $PAGE->requires->js_call_amd('core_contentbank/sort', 'init');
 
         $data = new stdClass();
-        $contentdata = array();
+
+        $rooturl = new \moodle_url('/contentbank/index.php', ['contextid' => $this->context->id]);
+        $data->root = $rooturl->out();
+
+        $data->breadcrumbs = $this->breadcrumbs;
+
+        $contentdata = [];
+        foreach ($this->folders as $folder) {
+            $link = new \moodle_url('/contentbank/index.php', ['contextid' => $this->context->id, 'folderid' => $folder->id]);
+            $contentdata[] = [
+                'name' => $folder->name,
+                'title' => strtolower($folder->name),
+                'link' => $link->out(false),
+                'icon' => \core_contentbank\folder::get_icon(),
+                'type' => get_string('folder'),
+                'size' => '-',
+                'author' => fullname(\core_user::get_user($folder->usercreated)),
+                'uses' => 0,
+            ];
+        }
+
         foreach ($this->contents as $content) {
             $file = $content->get_file();
             $filesize = $file ? $file->get_filesize() : 0;

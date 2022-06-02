@@ -88,6 +88,7 @@ abstract class contenttype {
         $entry->contenttype = $this->get_contenttype_name();
         $entry->contextid = $this->context->id;
         $entry->name = $record->name ?? '';
+        $entry->folderid = $record->folderid ?? 0;
         $entry->usercreated = $record->usercreated ?? $USER->id;
         $entry->timecreated = time();
         $entry->usermodified = $entry->usercreated;

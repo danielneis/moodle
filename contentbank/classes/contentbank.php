@@ -177,9 +177,12 @@ class contentbank {
      * @param  string|null $search Optional string to search (for now it will search only into the name).
      * @param  int $contextid Optional contextid to search.
      * @param  array $contenttypenames Optional array with the list of content-type names to search.
+     * @param  int $folderid Optional folderid to search.
+     * @param  bool $subfolders In case folderid is provided, if it will search subfolders.
      * @return array The contents for the enabled contentbank-type plugins having $search as name and placed in $contextid.
      */
-    public function search_contents(?string $search = null, ?int $contextid = 0, ?array $contenttypenames = null): array {
+    public function search_contents(?string $search = null, ?int $contextid = 0,
+        ?array $contenttypenames = null, ?int $folderid = 0, ?bool $subfolders = false): array {
         global $DB;
 
         $contents = [];
@@ -205,6 +208,15 @@ class contentbank {
         if (!empty($contextid)) {
             $params['contextid'] = $contextid;
             $sql .= ' AND contextid = :contextid ';
+        }
+
+        if ($subfolders) {
+            $folderpath = $DB->get_field('contentbank_folders', 'path', ['id' => $folderid]);
+            $params['folderpath'] = $DB->sql_like_escape($folderpath) . '%';
+            $sql .= ' AND ' . $DB->sql_like('f.path', ':folderpath', false, false) ;
+        } else {
+            $params['folderid'] = $folderid;
+            $sql .= ' AND folderid = :folderid ';
         }
 
         // Search for contents having this string (if defined).
@@ -327,9 +339,10 @@ class contentbank {
      * @param \context $context Context where to upload the file and content.
      * @param int $userid Id of the user uploading the file.
      * @param stored_file $file The file to get information from
+     * @param int $folderid Id of the folder where to upload the file and content.
      * @return content
      */
-    public function create_content_from_file(\context $context, int $userid, stored_file $file): ?content {
+    public function create_content_from_file(\context $context, int $userid, stored_file $file, ?int $folderid = 0): ?content {
         global $USER;
         if (empty($userid)) {
             $userid = $USER->id;
@@ -342,6 +355,7 @@ class contentbank {
         $record = new \stdClass();
         $record->name = $filename;
         $record->usercreated = $userid;
+        $record->folderid = $folderid;
         $contentype = new $classname($context);
         $content = $contentype->upload_content($file, $record);
         $event = \core\event\contentbank_content_uploaded::create_from_record($content->get_content());
@@ -447,5 +461,50 @@ class contentbank {
      */
     public function is_context_allowed(context $context): bool {
         return in_array($context->contextlevel, self::ALLOWED_CONTEXT_LEVELS);
+    }
+
+    /**
+     * Function to get all the folders in a folder.
+     *
+     * @param int $folderid  Folder where to look for folders.
+     * @param int $contextid Context where to look for folders.
+     * @return array
+     * @throws \dml_exception
+     */
+    public static function get_folders_in_folder(int $folderid, int $contextid): array {
+        global $DB;
+        return $DB->get_records('contentbank_folders', ['parent' => $folderid, 'contextid' => $contextid]);
+    }
+
+    /**
+     * Creates array of breadcrumb for folders.
+     *
+     * @param int $folderid Id of the folder to make breadcrumbs for
+     * @param int $contextid Id of the context
+     * @return array The array with folder path
+     */
+    public static function make_breadcrumb(int $folderid, int $contextid): array {
+        global $DB;
+
+        $breadcrumb = [];
+        if ($folderid) {
+            $params = ['contextid' => $contextid, 'id' => $folderid];
+            $path = $DB->get_field('contentbank_folders', 'path', $params);
+            $levels = explode('/', $path);
+            $url = new \moodle_url('/contentbank/index.php', $params);
+            foreach ($levels as $level) {
+                if ($level == '') {
+                    continue;
+                }
+                if ($name = $DB->get_field('contentbank_folders', 'name', ['id' => $level])) {
+                    $url->params(['folderid' => $level]);
+                    $breadcrumb[] = [
+                        'name' => $name,
+                        'link' => $url->out()
+                    ];
+                }
+            }
+        }
+        return $breadcrumb;
     }
 }

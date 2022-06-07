@@ -64,8 +64,27 @@ foreach ($breadcrumb as $bc) {
 // Create the cog menu with all the secondary actions, such as delete, rename...
 $actionmenu = new action_menu();
 $actionmenu->set_alignment(action_menu::TR, action_menu::BR);
-if (has_capability('moodle/contentbank:createfolder', $context) ||
-    user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'editingteacher']))) {
+if ($folderid) {
+    $folderrecord = $DB->get_record('contentbank_folders', ['id' => $folderid, 'contextid' => $contextid]);
+}
+if (isset($folderrecord)) {
+    $foldersinpath = explode('/', $folderrecord->path);
+    $topfolder = $foldersinpath[1];
+    if ($DB->get_field('contentbank_folders', 'name', ['id' => $topfolder]) == 'Professores') {
+        $systemctx = \context_system::instance();
+        $cancreatefolder =
+            user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'p_professor']), $systemctx->id) ||
+            user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'p_materiais']), $systemctx->id) ||
+            user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'p_administrador']), $systemctx->id) ||
+            user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'p_colabobrador']), $systemctx->id) ||
+            has_capability('moodle/contentbank:createfolder', $context);
+    } else {
+        $cancreatefolder = has_capability('moodle/contentbank:createfolder', $context);
+    }
+} else {
+    $cancreatefolder  = has_capability('moodle/contentbank:createfolder', $context);
+}
+if ($cancreatefolder) {
 
     $label = get_string('newfolder', 'core_contentbank');
 
@@ -91,9 +110,7 @@ if (has_capability('moodle/contentbank:createfolder', $context) ||
 
 if (has_capability('moodle/contentbank:createfolder', $context)) {
     if ($folderid) {
-        $folderrecord = $DB->get_record('contentbank_folders', ['id' => $folderid, 'contextid' => $contextid]);
         $folder = new \core_contentbank\folder($folderrecord);
-
         $label = get_string('renamefolder', 'core_contentbank');
 
         $attributes = [

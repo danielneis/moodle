@@ -449,7 +449,7 @@ abstract class contenttype {
      * @return bool True if content could be uploaded. False otherwise.
      */
     final public function can_delete(content $content): bool {
-        global $USER;
+        global $DB, $USER;
 
         if ($this->context->id != $content->get_content()->contextid) {
             // The content has to have exactly the same context as this contenttype.
@@ -457,6 +457,22 @@ abstract class contenttype {
         }
 
         $hascapability = has_capability('moodle/contentbank:deleteanycontent', $this->context);
+        if ($content->get_content()->folderid) {
+            $folderrecord = $DB->get_record('contentbank_folders', ['id' => $content->get_content()->folderid, 'contextid' => $this->context->id]);
+            if (!empty($folderrecord)) {
+                $foldersinpath = explode('/', $folderrecord->path);
+                $topfolder = $foldersinpath[1];
+                if ($DB->get_field('contentbank_folders', 'name', ['id' => $topfolder]) == 'Professores') {
+                    $systemctx = \context_system::instance();
+                    $hascapability =
+                        user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'p_professor']), $systemctx->id) ||
+                        user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'p_materiais']), $systemctx->id) ||
+                        user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'p_administrador']), $systemctx->id) ||
+                        user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'p_colabobrador']), $systemctx->id) ||
+                        has_capability('moodle/contentbank:deleteanycontent', $this->context);
+                }
+            }
+        }
         if ($content->get_content()->usercreated == $USER->id) {
             // This content has been created by the current user; check if she can delete her content.
             $hascapability = $hascapability || has_capability('moodle/contentbank:deleteowncontent', $this->context);
@@ -483,7 +499,7 @@ abstract class contenttype {
      * @return bool     True if content could be managed. False otherwise.
      */
     public final function can_manage(content $content): bool {
-        global $USER;
+        global $DB, $USER;
 
         if ($this->context->id != $content->get_content()->contextid) {
             // The content has to have exactly the same context as this contenttype.
@@ -492,6 +508,22 @@ abstract class contenttype {
 
         // Check main contentbank management permission.
         $hascapability = has_capability('moodle/contentbank:manageanycontent', $this->context);
+        if ($content->get_content()->folderid) {
+            $folderrecord = $DB->get_record('contentbank_folders', ['id' => $content->get_content()->folderid, 'contextid' => $this->context->id]);
+            if (!empty($folderrecord)) {
+                $foldersinpath = explode('/', $folderrecord->path);
+                $topfolder = $foldersinpath[1];
+                if ($DB->get_field('contentbank_folders', 'name', ['id' => $topfolder]) == 'Professores') {
+                    $systemctx = \context_system::instance();
+                    $hascapability =
+                        user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'p_professor']), $systemctx->id) ||
+                        user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'p_materiais']), $systemctx->id) ||
+                        user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'p_administrador']), $systemctx->id) ||
+                        user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'p_colabobrador']), $systemctx->id) ||
+                        has_capability('moodle/contentbank:manageanycontent', $this->context);
+                }
+            }
+        }
         if ($content->get_content()->usercreated == $USER->id) {
             // This content has been created by the current user; check if they can manage their content.
             $hascapability = $hascapability || has_capability('moodle/contentbank:manageowncontent', $this->context);

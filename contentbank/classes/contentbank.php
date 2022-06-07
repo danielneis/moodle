@@ -149,7 +149,7 @@ class contentbank {
         if ($dot === false) {
             return '';
         }
-        return substr($filename, $dot);
+        return strtolower(substr($filename, $dot));
     }
 
     /**
@@ -163,7 +163,7 @@ class contentbank {
         if ($dot === false) {
             return $filename;
         }
-        return strtolower(substr($filename, 0, $dot));
+        return substr($filename, 0, $dot);
     }
 
     /**

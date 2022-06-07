@@ -149,7 +149,7 @@ class contentbank {
         if ($dot === false) {
             return '';
         }
-        return strtolower(substr($filename, $dot));
+        return substr($filename, $dot);
     }
 
     /**

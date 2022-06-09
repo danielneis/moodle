@@ -442,17 +442,23 @@ function resource_pluginfile($course, $cm, $context, $filearea, $args, $forcedow
 
             }
             if (strpos(strtolower($filename), '.pdf') !== false) {
-                require_once($CFG->dirroot . '/contentbank/contenttype/document/lib.php');
-                $pdf = contenttype_document_process_pdf($stored_file, \context::instance_by_id($contentbankfile->contextid), $contentbankfile->itemid);
-                \core\session\manager::write_close(); // Unlock session during file serving.
-                $filename = mb_ereg_replace("([^\w\s\d\-_~,;\[\]\(\).])", '', $filename);
-                $filename = mb_ereg_replace("([\.]{2,})", '', $filename);
-                $filename = strtr(
-                    utf8_decode($filename),
-                    utf8_decode('àáâãäçèéêëìíîïñòóôõöùúûüýÿÀÁÂÃÄÇÈÉÊËÌÍÎÏÑÒÓÔÕÖÙÚÛÜÝ'),
-                    'aaaaaceeeeiiiinooooouuuuyyAAAAACEEEEIIIINOOOOOUUUUY');
-                $pdf->Output('I', utf8_decode($filename));
-                exit;
+                try {
+                    require_once($CFG->dirroot . '/contentbank/contenttype/document/lib.php');
+                    $pdf = contenttype_document_process_pdf($stored_file, \context::instance_by_id($contentbankfile->contextid), $contentbankfile->itemid);
+                    \core\session\manager::write_close(); // Unlock session during file serving.
+
+                    $filename = mb_ereg_replace("([^\w\s\d\-_~,;\[\]\(\).])", '', $filename);
+                    $filename = mb_ereg_replace("([\.]{2,})", '', $filename);
+                    $filename = strtr(
+                        utf8_decode($filename),
+                        utf8_decode('àáâãäçèéêëìíîïñòóôõöùúûüýÿÀÁÂÃÄÇÈÉÊËÌÍÎÏÑÒÓÔÕÖÙÚÛÜÝ'),
+                        'aaaaaceeeeiiiinooooouuuuyyAAAAACEEEEIIIINOOOOOUUUUY');
+                    $pdf->Output('I', utf8_decode($filename));
+                    exit;
+
+                } catch (Exception $e) {
+                    send_stored_file($stored_file, 0, 0, true, $options); // must force download - security!
+                }
             }
 
         }

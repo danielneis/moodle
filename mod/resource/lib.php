@@ -364,6 +364,7 @@ function resource_pluginfile($course, $cm, $context, $filearea, $args, $forcedow
     if ($context->contextlevel != CONTEXT_MODULE) {
         return false;
     }
+    $coursecontext = $context->get_course_context(false);
 
     require_course_login($course, true, $cm);
     if (!has_capability('mod/resource:view', $context)) {
@@ -444,7 +445,7 @@ function resource_pluginfile($course, $cm, $context, $filearea, $args, $forcedow
             if (strpos(strtolower($filename), '.pdf') !== false) {
                 try {
                     require_once($CFG->dirroot . '/contentbank/contenttype/document/lib.php');
-                    $pdf = contenttype_document_process_pdf($stored_file, \context::instance_by_id($contentbankfile->contextid), $contentbankfile->itemid);
+                    $pdf = contenttype_document_process_pdf($stored_file, $coursecontext, $contentbankfile->itemid);
                     \core\session\manager::write_close(); // Unlock session during file serving.
 
                     $filename = mb_ereg_replace("([^\w\s\d\-_~,;\[\]\(\).])", '', $filename);

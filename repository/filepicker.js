@@ -372,14 +372,12 @@ YUI.add('moodle-core_filepicker', function(Y) {
         /** initialize table view */
         var initialize_table_view = function() {
             var cols = [
+                {key: "customfield_code", label: 'Código', allowHTML: true, formatter: formatValue,
+                    sortable: true, sortFn: sortFoldersFirst},
                 {key: "displayname", label: M.util.get_string('name', 'moodle'), allowHTML: true, formatter: formatTitle,
                     sortable: true, sortFn: sortFoldersFirst},
                 {key: "datemodified", label: M.util.get_string('lastmodified', 'moodle'), allowHTML: true, formatter: formatValue,
                     sortable: true, sortFn: sortFoldersFirst},
-                {key: "size", label: M.util.get_string('size', 'repository'), allowHTML: true, formatter: formatValue,
-                    sortable: true, sortFn: sortFoldersFirst},
-                {key: "mimetype", label: M.util.get_string('type', 'repository'), allowHTML: true,
-                    sortable: true, sortFn: sortFoldersFirst}
             ];
 
             // Generate a checkbox based on toggleall's specification

@@ -444,7 +444,7 @@ class helper {
      */
     public static function get_icon($tool) {
         global $OUTPUT;
-        return $OUTPUT->favicon();
+        return $OUTPUT->get_favicon_url();
     }
 
     /**

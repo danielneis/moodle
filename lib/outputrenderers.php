@@ -394,6 +394,23 @@ class renderer_base {
     }
 
     /**
+     * Return the site's favicon URL, if any.
+     *
+     * @return moodle_url|false
+     */
+    public function get_favicon_url() {
+        global $CFG;
+        $logo = get_config('core_admin', 'favicon');
+        if (empty($logo)) {
+            return $this->image_url('favicon', 'theme');
+        }
+
+        // Use $CFG->themerev to prevent browser caching when the file changes.
+        return moodle_url::make_pluginfile_url(context_system::instance()->id, 'core_admin', 'favicon', '64x64/',
+            theme_get_revision(), $logo);
+    }
+
+    /**
      * Whether we should display the logo in the navbar.
      *
      * We will when there are no main logos, and we have compact logo.

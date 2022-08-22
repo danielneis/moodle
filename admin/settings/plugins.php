@@ -698,7 +698,9 @@ if ($hassiteconfig) {
 }
 
 // Content bank content types.
-if ($hassiteconfig) {
+
+if ($hassiteconfig ||
+    user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'p_administrador']), $systemcontext->id)) {
     $ADMIN->add('modules', new admin_category('contentbanksettings', new lang_string('contentbank')));
     $temp = new admin_settingpage('managecontentbanktypes', new lang_string('managecontentbanktypes'));
     $temp->add(new admin_setting_managecontentbankcontenttypes());

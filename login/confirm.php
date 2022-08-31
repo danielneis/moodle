@@ -96,7 +96,7 @@ if (!empty($data) || (!empty($p) && !empty($s))) {
         echo $OUTPUT->box_start('generalbox centerpara boxwidthnormal boxaligncenter');
         echo "<h3>".get_string("thanks").", ". fullname($USER) . "</h3>\n";
         echo "<p>".get_string("confirmed")."</p>\n";
-        echo $OUTPUT->single_button(core_login_get_return_url(), get_string('continue'));
+        echo html_writer::link(core_login_get_return_url(), get_string('continue'), ['class' => 'btn-primary']);
         echo $OUTPUT->box_end();
         echo $OUTPUT->footer();
         exit;

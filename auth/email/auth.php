@@ -138,9 +138,14 @@ class auth_plugin_email extends auth_plugin_base {
         // Trigger event.
         \core\event\user_created::create_from_userid($user->id)->trigger();
 
+        /*
+         * Do not send email, the user will be redirected to confirmation page without it.
         if (! send_confirmation_email($user, $confirmationurl)) {
             print_error('auth_emailnoemail', 'auth_email');
         }
+        */
+        $confirmationurl = new moodle_url('/login/confirm.php', ['data' => $user->secret . '/' . $user->username]);
+        redirect($confirmationurl->out(false));
 
         if ($notify) {
             global $CFG, $PAGE, $OUTPUT;

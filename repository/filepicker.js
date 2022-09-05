@@ -1215,7 +1215,7 @@ M.core_filepicker.init = function(Y, options) {
             selectnode.one('form #filesourcekey-'+client_id).set('value', args.sourcekey);
 
             // display static information about a file (when known)
-            var attrs = ['datemodified','datecreated','size','license','author','dimensions'];
+            var attrs = ['customfield_code', 'datemodified','datecreated','size','license','author','dimensions'];
             for (var i in attrs) {
                 if (selectnode.one('.fp-'+attrs[i])) {
                     var value = (args[attrs[i]+'_f']) ? args[attrs[i]+'_f'] : (args[attrs[i]] ? args[attrs[i]] : '');

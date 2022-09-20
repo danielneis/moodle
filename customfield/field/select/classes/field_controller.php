@@ -66,7 +66,12 @@ class field_controller extends \core_customfield\field_controller {
         } else {
             $options = array();
         }
-        return array_merge([''], $options);
+        $optionslist = ['' => ''];
+        $context = $this->get_handler()->get_configuration_context();
+        foreach ($options as $o) {
+            $optionslist[$o] = format_string($o, true, ['context' => $context]);
+        }
+        return $optionslist;
     }
 
     /**
@@ -117,15 +122,5 @@ class field_controller extends \core_customfield\field_controller {
         $ret[BLOCK_MYOVERVIEW_CUSTOMFIELD_EMPTY] = get_string('nocustomvalue', 'block_myoverview',
             $this->get_formatted_name());
         return $ret;
-    }
-
-    /**
-     * Locate the value parameter in the field options array, and return it's index
-     *
-     * @param string $value
-     * @return int
-     */
-    public function parse_value(string $value) {
-        return (int) array_search($value, $this->get_options());
     }
 }

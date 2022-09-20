@@ -61,7 +61,7 @@ class customfield_test extends \advanced_testcase {
         $c1 = $dg->create_course(['shortname' => 'SN', 'fullname' => 'FN',
             'summary' => 'DESC', 'summaryformat' => FORMAT_MOODLE,
             'customfield_f1' => 'some text', 'customfield_f2' => 1,
-            'customfield_f3' => $now, 'customfield_f4' => 2,
+            'customfield_f3' => $now, 'customfield_f4' => 'b',
             'customfield_f5_editor' => ['text' => 'test', 'format' => FORMAT_HTML]]);
 
         $data = \core_course\customfield\course_handler::create()->export_instance_data_object($c1->id);

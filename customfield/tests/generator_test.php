@@ -96,7 +96,7 @@ class generator_test extends \advanced_testcase {
         $this->assertNotEmpty($data2->get('id'));
         $this->assertEquals(1546300800, $data2->get_value());
         $this->assertNotEmpty($data3->get('id'));
-        $this->assertEquals(2, $data3->get_value());
+        $this->assertEquals('b', $data3->get_value());
         $this->assertNotEmpty($data4->get('id'));
         $this->assertEquals('Hello', $data4->get_value());
         $this->assertNotEmpty($data5->get('id'));

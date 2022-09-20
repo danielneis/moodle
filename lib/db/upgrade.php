@@ -474,6 +474,7 @@ function xmldb_main_upgrade($oldversion) {
         upgrade_main_savepoint(true, 2023062200.00);
     }
 
+
     if ($oldversion < 2023062700.01) {
         // Define field name to be added to external_tokens.
         $table = new xmldb_table('external_tokens');
@@ -977,6 +978,34 @@ function xmldb_main_upgrade($oldversion) {
 
         // Main savepoint reached.
         upgrade_main_savepoint(true, 2024012300.00);
+    }
+
+    if ($oldversion < 2024012500.01) {
+        if ($fields = $DB->get_records('customfield_field', ['type' => 'select'])) {
+            foreach ($fields as $f) {
+                $configdata = json_decode($f->configdata);
+                $options = preg_split("/\s*\n\s*/", trim($configdata->options));
+                if ($data = $DB->get_records('customfield_data', ['fieldid' => $f->id])) {
+                    $total = count($data);
+                    if ($total > 0) {
+                        $total = 1; // Avoid division by zero.
+                        $pbar = new progress_bar('upgradeselectcustomfielddata', 500, true);
+                        $i = 0;
+                        foreach ($data as $d) {
+                            if (empty($d->charvalue)) {
+                                $d->charvalue = $options[$d->intvalue - 1]; // Old code added an 'empty' to beginning of the list.
+                                $DB->update_record('customfield_data', $d);
+                            }
+                            // Update progress.
+                            $i++;
+                            $pbar->update($i, $ftotal, "Migrating customfield data - {$i}/{$ftotal}.");
+                        }
+                    }
+                }
+            }
+        }
+        // Main savepoint reached.
+        upgrade_main_savepoint(true, 2024012500.01);
     }
 
     return true;

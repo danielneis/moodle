@@ -169,7 +169,7 @@ abstract class contentbank_browser {
      * Generate nodes for the content bank content in the current context which can be accessed/viewed by the user.
      *
      * @return array[] The array containing the content nodes where each content node is an array with keys:
-     *                 shorttitle, title, datemodified, datecreated, author, license, isref, source, icon, thumbnail.
+     *                 customfield_code, shorttitle, title, datemodified, datecreated, author, license, isref, source, icon, thumbnail.
      */
     private function get_contentbank_content(): array {
         global $DB;
@@ -181,6 +181,7 @@ abstract class contentbank_browser {
         return array_reduce($contents, function($list, $content) {
             if ((!is_callable([$content, 'is_temporary']) || !$content->is_temporary()) && $this->can_access_content() &&
                     $contentnode = \repository_contentbank\helper::create_contentbank_content_node($content)) {
+
                 global $DB;
 
                 $categoryid = $DB->get_field('customfield_category', 'id', ['component' => 'core_contentbank'], IGNORE_MULTIPLE);

@@ -40,7 +40,7 @@ class data_controller extends \core_customfield\data_controller {
      * @return string
      */
     public function datafield() : string {
-        return 'intvalue';
+        return 'charvalue';
     }
 
     /**
@@ -49,18 +49,11 @@ class data_controller extends \core_customfield\data_controller {
      * @return mixed
      */
     public function get_default_value() {
-        $defaultvalue = $this->get_field()->get_configdata_property('defaultvalue');
-        if ('' . $defaultvalue !== '') {
-            $key = array_search($defaultvalue, $this->get_field()->get_options());
-            if ($key !== false) {
-                return $key;
-            }
-        }
-        return 0;
+        return $this->get_field()->get_configdata_property('defaultvalue');
     }
 
     /**
-     * Add fields for editing a textarea field.
+     * Add fields for editing a select field.
      *
      * @param \MoodleQuickForm $mform
      */
@@ -72,7 +65,7 @@ class data_controller extends \core_customfield\data_controller {
         $context = $this->get_field()->get_handler()->get_configuration_context();
         foreach ($options as $key => $option) {
             // Multilang formatting with filters.
-            $formattedoptions[$key] = format_string($option, true, ['context' => $context]);
+            $formattedoptions[$option] = format_string($option, true, ['context' => $context]);
         }
 
         $elementname = $this->get_form_element_name();

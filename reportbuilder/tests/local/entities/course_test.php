@@ -134,7 +134,7 @@ class course_test extends advanced_testcase {
             ['categoryid' => $category->get('id'), 'type' => 'select', 'name' => 'Customfield menu', 'shortname' => 'cf5',
                 'configdata' => ['defaultvalue' => 'Option A', 'options' => "Option A\nOption B\nOption C"]]);
         // Select option C for course1 (options are counted starting from one).
-        $cfgenerator->add_instance_data($field5, (int)$course1->id, 3);
+        $cfgenerator->add_instance_data($field5, (int)$course1->id, 'Option C');
 
         $tablerows = $this->get_report_table_rows();
         $courserows = array_filter($tablerows, static function(array $row) use ($course1): bool {
@@ -277,8 +277,8 @@ class course_test extends advanced_testcase {
         $field5 = $cfgenerator->create_field(
             ['categoryid' => $category->get('id'), 'type' => 'select', 'name' => 'Customfield menu', 'shortname' => 'cf5',
                 'configdata' => ['defaultvalue' => 'Option A', 'options' => "Option A\nOption B\nOption C"]]);
-        $cfgenerator->add_instance_data($field5, (int)$course1->id, 3);
-        $cfgenerator->add_instance_data($field5, (int)$course2->id, 2);
+        $cfgenerator->add_instance_data($field5, (int)$course1->id, 'Option C');
+        $cfgenerator->add_instance_data($field5, (int)$course2->id, 'Option B');
 
         $filtervalues = [
             'course:customfield_cf_operator' => text::IS_EQUAL_TO,
@@ -301,7 +301,7 @@ class course_test extends advanced_testcase {
         // Filter by menu customfield.
         $filtervalues = [
             'course:customfield_cf5_operator' => select::EQUAL_TO,
-            'course:customfield_cf5_value' => 3, // Option C.
+            'course:customfield_cf5_value' => 'Option C',
         ];
         $tablerows = $this->get_report_table_rows($filtervalues);
         $this->assertEquals([

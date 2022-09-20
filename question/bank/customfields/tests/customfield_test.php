@@ -98,13 +98,13 @@ class customfield_test extends \advanced_testcase {
         $this->question1data = [
                 'category' => $qcat->id, 'idnumber' => 'q1',
                 'customfield_f1' => 'some text', 'customfield_f2' => 1,
-                'customfield_f3' => $this->testnow, 'customfield_f4' => 2,
+                'customfield_f3' => $this->testnow, 'customfield_f4' => 'b',
                 'customfield_f5_editor' => ['text' => 'test', 'format' => FORMAT_HTML]];
 
         $this->question2data = [
                 'category' => $qcat->id, 'idnumber' => 'q2',
                 'customfield_f1' => 'some more text', 'customfield_f2' => 0,
-                'customfield_f3' => $this->testnow, 'customfield_f4' => 1,
+                'customfield_f3' => $this->testnow, 'customfield_f4' => 'a',
                 'customfield_f5_editor' => ['text' => 'test text', 'format' => FORMAT_HTML]];
     }
 

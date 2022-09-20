@@ -4536,5 +4536,24 @@ privatefiles,moodle|/user/files.php';
         upgrade_main_savepoint(true, 2022041901.07);
     }
 
+    if ($oldversion < 2022041904.03) {
+
+        if ($fields = $DB->get_records('customfield_field', ['type' => 'select'])) {
+            foreach ($fields as $f) {
+                $configdata = json_decode($f->configdata);
+                $options = preg_split("/\s*\n\s*/", trim($configdata->options));
+                if ($data = $DB->get_records('customfield_data', ['fieldid' => $f->id])) {
+                    foreach ($data as $d) {
+                        if (empty($d->charvalue)) {
+                            $d->charvalue = $options[$d->intvalue - 1]; // Old code added an 'empty' to beginning of the list.
+                            $DB->update_record('customfield_data', $d);
+                        }
+                    }
+                }
+            }
+        }
+        upgrade_main_savepoint(true, 2022041904.03);
+    }
+
     return true;
 }

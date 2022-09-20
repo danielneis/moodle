@@ -170,7 +170,7 @@ class custom_fields_test extends core_reportbuilder_testcase {
             ['shortname' => 'textarea_editor', 'value' => ['text' => 'Goodbye', 'format' => FORMAT_MOODLE]],
             ['shortname' => 'checkbox', 'value' => true],
             ['shortname' => 'date', 'value' => 1669852800],
-            ['shortname' => 'select', 'value' => 2],
+            ['shortname' => 'select', 'value' => 'Dog'],
         ]]);
 
         /** @var core_reportbuilder_generator $generator */

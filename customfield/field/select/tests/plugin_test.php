@@ -59,8 +59,8 @@ class plugin_test extends \advanced_testcase {
         $this->courses[2] = $this->getDataGenerator()->create_course();
         $this->courses[3] = $this->getDataGenerator()->create_course();
 
-        $this->cfdata[1] = $this->get_generator()->add_instance_data($this->cfields[1], $this->courses[1]->id, 1);
-        $this->cfdata[2] = $this->get_generator()->add_instance_data($this->cfields[1], $this->courses[2]->id, 1);
+        $this->cfdata[1] = $this->get_generator()->add_instance_data($this->cfields[1], $this->courses[1]->id, 'a');
+        $this->cfdata[2] = $this->get_generator()->add_instance_data($this->cfields[1], $this->courses[2]->id, 'a');
 
         $this->setUser($this->getDataGenerator()->create_user());
     }
@@ -125,7 +125,7 @@ class plugin_test extends \advanced_testcase {
         $this->assertFalse($form->is_validated());
 
         // Now with required field.
-        $submitdata['customfield_myfield2'] = 1;
+        $submitdata['customfield_myfield2'] = 'a';
         core_customfield_test_instance_form::mock_submit($submitdata, []);
         $form = new core_customfield_test_instance_form('POST',
             ['handler' => $handler, 'instance' => $this->courses[1]]);
@@ -141,49 +141,13 @@ class plugin_test extends \advanced_testcase {
      * Test for data_controller::get_value and export_value
      */
     public function test_get_export_value() {
-        $this->assertEquals(1, $this->cfdata[1]->get_value());
+        $this->assertEquals('a', $this->cfdata[1]->get_value());
         $this->assertEquals('a', $this->cfdata[1]->export_value());
 
         // Field without data but with a default value.
         $d = \core_customfield\data_controller::create(0, null, $this->cfields[3]);
-        $this->assertEquals(2, $d->get_value());
+        $this->assertEquals('b', $d->get_value());
         $this->assertEquals('b', $d->export_value());
-    }
-
-    /**
-     * Data provider for {@see test_parse_value}
-     *
-     * @return array
-     */
-    public function parse_value_provider() : array {
-        return [
-            ['Red', 1],
-            ['Blue', 2],
-            ['Green', 3],
-            ['Mauve', 0],
-        ];
-    }
-
-    /**
-     * Test field parse_value method
-     *
-     * @param string $value
-     * @param int $expected
-     * @return void
-     *
-     * @dataProvider parse_value_provider
-     */
-    public function test_parse_value(string $value, int $expected) {
-        $field = $this->get_generator()->create_field([
-            'categoryid' => $this->cfcat->get('id'),
-            'type' => 'select',
-            'shortname' => 'myselect',
-            'configdata' => [
-                'options' => "Red\nBlue\nGreen",
-            ],
-        ]);
-
-        $this->assertSame($expected, $field->parse_value($value));
     }
 
     /**

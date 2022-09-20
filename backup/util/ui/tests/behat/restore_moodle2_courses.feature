@@ -49,6 +49,74 @@ Feature: Restore Moodle 2 course backups
     And I press "Cancel"
 
   @javascript
+  Scenario: Restore a course with a customfield in a new course
+    Given the following "custom field categories" exist:
+      | name              | component   | area   | itemid |
+      | Category for test | core_course | course | 0      |
+    When I navigate to "Courses > Course custom fields" in site administration
+    And I click on "Add a new custom field" "link"
+    And I click on "Dropdown menu" "link"
+    And I set the following fields to these values:
+      | Name       | Test field1 |
+      | Short name | testfield1  |
+      | Locked     | No          |
+    And I set the field "Menu options (one per line)" to multiline:
+    """
+    a
+    b
+    """
+    And I click on "Save changes" "button" in the "Adding a new Dropdown menu" "dialogue"
+    And I am on "Course 1" course homepage
+    And I navigate to "Settings" in current page administration
+    And I set the following fields to these values:
+      | Test field1 | b |
+    And I press "Save and display"
+    And I am on "Course 1" course homepage with editing mode on
+    When I backup "Course 1" course using this options:
+      | Confirmation | Filename | test_backup.mbz |
+    And I restore "test_backup.mbz" backup into a new course using this options:
+      | Schema | Course name | Course 1 restored in a new course |
+      | Schema | Course short name | Course 1 restored in a new course |
+    And I am on "Course 1 restored in a new course" course homepage
+    And I navigate to "Settings" in current page administration
+    And I expand all fieldsets
+    Then the field "id_customfield_testfield1" matches value "b"
+    And I press "Cancel"
+
+  @javascript @_file_upload
+  Scenario: Restore a course with a customfield from a backup before MDL-75809
+    Given the following "custom field categories" exist:
+      | name              | component   | area   | itemid |
+      | Category for test | core_course | course | 0      |
+    When I navigate to "Courses > Course custom fields" in site administration
+    And I click on "Add a new custom field" "link"
+    And I click on "Dropdown menu" "link"
+    And I set the following fields to these values:
+      | Name       | Test field1  |
+      | Short name | dropdownmenu |
+      | Locked     | No           |
+    And I set the field "Menu options (one per line)" to multiline:
+    """
+    First
+    Second
+    Third
+    Fourth
+    """
+    And I click on "Save changes" "button" in the "Adding a new Dropdown menu" "dialogue"
+    And I am on the "Course 1" "restore" page logged in as "admin"
+    And I press "Manage backup files"
+    And I upload "backup/moodle2/tests/fixtures/pre-mdl-75809.mbz" file to "Files" filemanager
+    And I press "Save changes"
+    And I restore "pre-mdl-75809.mbz" backup into a new course using this options:
+      | Schema | Course name       | Course 5 |
+      | Schema | Course short name | C5       |
+    And I am on "C5" course homepage
+    And I navigate to "Settings" in current page administration
+    And I expand all fieldsets
+    Then the field "id_customfield_dropdownmenu" matches value "Second"
+    And I press "Cancel"
+
+  @javascript
   Scenario: Restore a backup into the same course
     When I backup "Course 3" course using this options:
       | Confirmation | Filename | test_backup.mbz |

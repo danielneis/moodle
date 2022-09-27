@@ -445,7 +445,7 @@ function resource_pluginfile($course, $cm, $context, $filearea, $args, $forcedow
             if (strpos(strtolower($filename), '.pdf') !== false) {
                 try {
                     require_once($CFG->dirroot . '/contentbank/contenttype/document/lib.php');
-                    $pdf = contenttype_document_process_pdf($stored_file, $coursecontext, $contentbankfile->itemid);
+                    $pdf = contenttype_document_process_pdf($stored_file, $coursecontext, $contentbankfile->itemid, $filename);
                     \core\session\manager::write_close(); // Unlock session during file serving.
 
                     $filename = mb_ereg_replace("([^\w\s\d\-_~,;\[\]\(\).])", '', $filename);

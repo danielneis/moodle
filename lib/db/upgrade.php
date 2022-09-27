@@ -2759,8 +2759,10 @@ function xmldb_main_upgrade($oldversion) {
                 if ($data = $DB->get_records('customfield_data', ['fieldid' => $f->id])) {
                     foreach ($data as $d) {
                         if (empty($d->charvalue)) {
-                            $d->charvalue = $options[$d->intvalue];
-                            $DB->update_record('customfield_data', $d);
+                            if (isset($options[$d->intvalue])) {
+                                $d->charvalue = $options[$d->intvalue];
+                                $DB->update_record('customfield_data', $d);
+                            }
                         }
                     }
                 }

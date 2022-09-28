@@ -429,6 +429,7 @@ function resource_pluginfile($course, $cm, $context, $filearea, $args, $forcedow
         if ($stored_file && !$stored_file->is_directory()) {
 
             $filename = $stored_file->get_filename();
+            $originalfilename = $filename;
             if ((strpos(strtolower($filename), '.odp') !== false) ||
                 (strpos(strtolower($filename), '.ppt') !== false) ||
                 (strpos(strtolower($filename), '.doc') !== false)) {
@@ -445,7 +446,7 @@ function resource_pluginfile($course, $cm, $context, $filearea, $args, $forcedow
             if (strpos(strtolower($filename), '.pdf') !== false) {
                 try {
                     require_once($CFG->dirroot . '/contentbank/contenttype/document/lib.php');
-                    $pdf = contenttype_document_process_pdf($stored_file, $coursecontext, $contentbankfile->itemid, $filename);
+                    $pdf = contenttype_document_process_pdf($stored_file, $coursecontext, $contentbankfile->itemid, $originalfilename);
                     \core\session\manager::write_close(); // Unlock session during file serving.
 
                     $filename = mb_ereg_replace("([^\w\s\d\-_~,;\[\]\(\).])", '', $filename);

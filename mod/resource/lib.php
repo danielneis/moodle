@@ -448,13 +448,11 @@ function resource_pluginfile($course, $cm, $context, $filearea, $args, $forcedow
                     $pdf = contenttype_document_process_pdf($stored_file, $coursecontext, $contentbankfile->itemid, $filename);
                     \core\session\manager::write_close(); // Unlock session during file serving.
 
-                    $filename = mb_ereg_replace("([^\w\s\d\-_~,;\[\]\(\).])", '', $filename);
-                    $filename = mb_ereg_replace("([\.]{2,})", '', $filename);
-                    $filename = strtr(
-                        utf8_decode($filename),
-                        utf8_decode('àáâãäçèéêëìíîïñòóôõöùúûüýÿÀÁÂÃÄÇÈÉÊËÌÍÎÏÑÒÓÔÕÖÙÚÛÜÝ'),
-                        'aaaaaceeeeiiiinooooouuuuyyAAAAACEEEEIIIINOOOOOUUUUY');
-                    $pdf->Output('I', utf8_decode($filename));
+                    if ($forcedownload) {
+                        $pdf->Output('D', $filename, true);
+                    } else {
+                        $pdf->Output('I', $filename, true);
+                    }
                     exit;
 
                 } catch (Exception $e) {

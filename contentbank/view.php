@@ -86,6 +86,7 @@ $PAGE->set_pagetype('contentbank');
 $actionmenu = new action_menu();
 $actionmenu->set_alignment(action_menu::TR, action_menu::BR);
 if ($contenttype->can_manage($content)) {
+
     // Add the visibility item to the menu.
     switch($content->get_visibility()) {
         case content::VISIBILITY_UNLISTED:
@@ -101,6 +102,41 @@ if ($contenttype->can_manage($content)) {
         default:
             print_error('contentvisibilitynotfound', 'error', $returnurl, $content->get_visibility());
             break;
+    }
+
+    if ($content->is_deleted()) {
+        // Add the restore content item to the menu.
+        $attributes = [
+                    'data-action' => 'restorecontent',
+                    'data-contentname' => $content->get_name(),
+                    'data-uses' => count($content->get_uses()),
+                    'data-contentid' => $content->get_id(),
+                    'data-contextid' => $context->id,
+                ];
+        $actionmenu->add_secondary_action(new action_menu_link(
+            new moodle_url('#'),
+            new pix_icon('e/restore_draft', get_string('restorecontent', 'contentbank')),
+            get_string('restorecontent', 'contentbank'),
+            false,
+            $attributes
+        ));
+    } else {
+        // Add the visibility item to the menu.
+        switch($content->get_visibility()) {
+            case content::VISIBILITY_UNLISTED:
+                $visibilitylabel = get_string('visibilitysetpublic', 'core_contentbank');
+                $newvisibility = content::VISIBILITY_PUBLIC;
+                $visibilityicon = 't/hide';
+                break;
+            case content::VISIBILITY_PUBLIC:
+                $visibilitylabel = get_string('visibilitysetunlisted', 'core_contentbank');
+                $newvisibility = content::VISIBILITY_UNLISTED;
+                $visibilityicon = 't/show';
+                break;
+            default:
+                print_error('contentvisibilitynotfound', 'error', $returnurl, $content->get_visibility());
+                break;
+        }
     }
 
     $attributes = [
@@ -138,11 +174,49 @@ if ($contenttype->can_manage($content)) {
             false,
             ['data-action' => 'upload']
         ));
+
         $PAGE->requires->js_call_amd(
             'core_contentbank/upload',
             'initModal',
             ['[data-action=upload]', \core_contentbank\form\upload_files::class, $context->id, $content->get_id()]
         );
+
+        // Add the move content item to the menu.
+        $attributes = [
+            'data-action' => 'movecontent',
+            'data-contentname' => $record->name,
+            'data-contentid' => $content->get_id(),
+        ];
+        $actionmenu->add_secondary_action(new action_menu_link(
+            new moodle_url('#'),
+            new pix_icon('i/folder', get_string('changefolder', 'contentbank')),
+            get_string('changefolder', 'contentbank'),
+            false,
+            $attributes
+        ));
+        $PAGE->requires->js_call_amd(
+            'core_contentbank/move_content',
+            'initModal',
+            [
+                '[data-action="movecontent"]',
+                \core_contentbank\form\move_content::class,
+                $context->id, $record->folderid, $record->id
+            ]);
+
+        if ($contenttype->can_upload()) {
+            $actionmenu->add_secondary_action(new action_menu_link(
+                new moodle_url('/contentbank/view.php', ['contextid' => $context->id, 'id' => $content->get_id()]),
+                new pix_icon('i/upload', get_string('upload')),
+                get_string('replacecontent', 'contentbank'),
+                false,
+                ['data-action' => 'upload']
+            ));
+            $PAGE->requires->js_call_amd(
+                'core_contentbank/upload',
+                'initModal',
+                ['[data-action=upload]', \core_contentbank\form\upload_files::class, $context->id, $content->get_id()]
+            );
+        }
     }
 }
 if ($contenttype->can_download($content)) {

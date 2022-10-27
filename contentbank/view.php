@@ -112,34 +112,36 @@ if ($contenttype->can_manage($content)) {
         ));
     } else {
         // Add the visibility item to the menu.
-        switch($content->get_visibility()) {
-            case content::VISIBILITY_UNLISTED:
-                $visibilitylabel = get_string('visibilitysetpublic', 'core_contentbank');
-                $newvisibility = content::VISIBILITY_PUBLIC;
-                $visibilityicon = 't/hide';
-                break;
-            case content::VISIBILITY_PUBLIC:
-                $visibilitylabel = get_string('visibilitysetunlisted', 'core_contentbank');
-                $newvisibility = content::VISIBILITY_UNLISTED;
-                $visibilityicon = 't/show';
-                break;
-            default:
-                print_error('contentvisibilitynotfound', 'error', $returnurl, $content->get_visibility());
-                break;
-        }
+        if (has_capability('moodle/contentbank:viewunlistedcontent', $context)) {
+            switch($content->get_visibility()) {
+                case content::VISIBILITY_UNLISTED:
+                    $visibilitylabel = get_string('visibilitysetpublic', 'core_contentbank');
+                    $newvisibility = content::VISIBILITY_PUBLIC;
+                    $visibilityicon = 't/hide';
+                    break;
+                case content::VISIBILITY_PUBLIC:
+                    $visibilitylabel = get_string('visibilitysetunlisted', 'core_contentbank');
+                    $newvisibility = content::VISIBILITY_UNLISTED;
+                    $visibilityicon = 't/show';
+                    break;
+                default:
+                    print_error('contentvisibilitynotfound', 'error', $returnurl, $content->get_visibility());
+                    break;
+            }
 
-        $attributes = [
-            'data-action' => 'setcontentvisibility',
-            'data-visibility' => $newvisibility,
-            'data-contentid' => $content->get_id(),
-        ];
-        $actionmenu->add_secondary_action(new action_menu_link(
-            new moodle_url('#'),
-            new pix_icon($visibilityicon, $visibilitylabel),
-            $visibilitylabel,
-            false,
-            $attributes
-        ));
+            $attributes = [
+                'data-action' => 'setcontentvisibility',
+                'data-visibility' => $newvisibility,
+                'data-contentid' => $content->get_id(),
+            ];
+            $actionmenu->add_secondary_action(new action_menu_link(
+                new moodle_url('#'),
+                new pix_icon($visibilityicon, $visibilitylabel),
+                $visibilitylabel,
+                false,
+                $attributes
+            ));
+        }
 
         // Add the rename content item to the menu.
         $attributes = [

@@ -494,4 +494,21 @@ class contentbank {
         }
         return $breadcrumb;
     }
+
+    public static function get_folders_menu(int $folderid, int $contextid, array $folders, $parent): array {
+        global $DB;
+        if (empty($folders)) {
+            $folders = [0 => '/'];
+        }
+        $currentfolders = $DB->get_records_menu(
+            'contentbank_folders',
+            ['contextid' => $contextid, 'parent' => $folderid], 'id,name');
+        if (!empty($currentfolders)) {
+            foreach ($currentfolders as $folderid => $name) {
+                $folders[$folderid] = $parent . ' / ' . $name;
+                $folders = self::get_folders_menu($folderid, $contextid, $folders, $parent . ' / ' . $name);
+            }
+        }
+        return $folders;
+    }
 }

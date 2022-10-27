@@ -50,8 +50,7 @@ class move_content extends \core_form\dynamic_form {
         $mform->addElement('static', 'currentfolder', get_string('currentfolder', 'core_contentbank', $foldername));
         $mform->setType('name', PARAM_RAW);
 
-        $folders = [0 => get_string('topfolder', 'contentbank')] +
-            $DB->get_records_menu('contentbank_folders', ['contextid' => $this->_ajaxformdata['contextid']], 'id,name');
+        $folders = \core_contentbank\contentbank::get_folders_menu(0, $this->_ajaxformdata['contextid'], [], '');
         $mform->addElement('select', 'folderid', get_string('newfolder', 'core_contentbank'), $folders);
     }
 

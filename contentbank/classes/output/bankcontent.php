@@ -122,6 +122,8 @@ class bankcontent implements renderable, templatable {
             $method = 'export_tool_'.$tool['action'];
             if (method_exists($this, $method)) {
                 $this->$method($tool);
+            } else {
+                $this->export_tool_default($tool);
             }
             $data->tools[] = $tool;
         }
@@ -206,5 +208,11 @@ class bankcontent implements renderable, templatable {
         }
 
         $tool['contenttypes'] = $addoptions;
+    }
+
+    private function export_tool_default(array &$tool) {
+        if (empty($tool['checkbox']) && empty($tool['dropdown'])) {
+            $tool['button'] = true;
+        }
     }
 }

@@ -413,6 +413,12 @@ abstract class content {
         global $USER, $DB;
         $context = \context::instance_by_id($this->get_contextid());
 
+        $displaypreference = get_user_preferences('contentbank_displayunlisted', 1);
+
+        if (($this->get_visibility() == self::VISIBILITY_UNLISTED) && !$displaypreference) {
+            return false;
+        }
+
         return $USER->id == $this->content->usercreated ||
             $this->get_visibility() == self::VISIBILITY_PUBLIC ||
             has_capability('moodle/contentbank:viewunlistedcontent', $context);

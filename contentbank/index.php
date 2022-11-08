@@ -173,6 +173,33 @@ if (has_capability('moodle/contentbank:deleteanycontent', $context)) {
     ));
 }
 
+if (has_capability('moodle/contentbank:viewunlistedcontent', $context)) {
+    $setdisplay = optional_param('displayunlisted', null, PARAM_INT);
+    if (is_null($setdisplay)) {
+        $display = get_user_preferences('contentbank_displayunlisted', 1);
+    } else {
+        set_user_preference('contentbank_displayunlisted', $setdisplay);
+        $display = $setdisplay;
+    }
+    $seturl = new moodle_url('/contentbank/index.php', ['contextid' => $contextid, 'search' => $search, 'folderid' => $folderid]);
+    if ($display) {
+        $displaylabel = get_string('dontdisplayunlisted', 'contentbank');
+        $seturl->param('displayunlisted', 0);
+        $icon = 't/show';
+    } else {
+        $displaylabel = get_string('displayunlisted', 'contentbank');
+        $seturl->param('displayunlisted', 1);
+        $icon = 't/hide';
+    }
+    $actionmenu->add_secondary_action(new action_menu_link(
+        new moodle_url($seturl),
+        new pix_icon($icon, $displaylabel),
+        $displaylabel,
+        false,
+        []
+    ));
+}
+
 // Add the cog menu to the header.
 $PAGE->add_header_action(html_writer::div(
     $OUTPUT->render($actionmenu),

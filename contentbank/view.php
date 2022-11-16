@@ -157,6 +157,20 @@ if ($contenttype->can_manage($content)) {
             $attributes
         ));
 
+        // Add the rename content item to the menu.
+        $attributes = [
+            'data-action' => 'copycontent',
+            'data-contentname' => get_string('copyof', 'contentbank', $record->name),
+            'data-contentid' => $content->get_id(),
+        ];
+        $actionmenu->add_secondary_action(new action_menu_link(
+            new moodle_url('#'),
+            new pix_icon('e/copy', get_string('copycontent', 'contentbank')),
+            get_string('copycontent', 'contentbank'),
+            false,
+            $attributes
+        ));
+
         // Add the move content item to the menu.
         $attributes = [
             'data-action' => 'movecontent',

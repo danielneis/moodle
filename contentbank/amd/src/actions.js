@@ -42,6 +42,7 @@ function($, Ajax, Notification, Str, Templates, Url, ModalFactory, ModalEvents) 
         SET_CONTENT_VISIBILITY: '[data-action="setcontentvisibility"]',
         RESTORE_CONTENT: '[data-action="restorecontent"]',
         DELETE_CONTENT_FOREVER: '[data-action="deletecontentforever"]',
+        COPY_CONTENT: '[data-action="copycontent"]',
     };
 
     /**
@@ -155,6 +156,70 @@ function($, Ajax, Notification, Str, Templates, Url, ModalFactory, ModalEvents) 
                     var newname = $("#newname").val().trim();
                     if (newname) {
                         renameContent(contentid, newname);
+                    } else {
+                        var errorStrings = [
+                            {
+                                key: 'error',
+                            },
+                            {
+                                key: 'emptynamenotallowed',
+                                component: 'core_contentbank',
+                            },
+                        ];
+                        Str.get_strings(errorStrings).then(function(langStrings) {
+                            Notification.alert(langStrings[0], langStrings[1]);
+                        }).catch(Notification.exception);
+                        e.preventDefault();
+                    }
+                });
+
+                // Handle hidden event.
+                modal.getRoot().on(ModalEvents.hidden, function() {
+                    // Destroy when hidden.
+                    modal.destroy();
+                });
+
+                // Show the modal.
+                modal.show();
+
+                return;
+            }).catch(Notification.exception);
+        });
+
+        $(ACTIONS.COPY_CONTENT).click(function(e) {
+            e.preventDefault();
+
+            var contentname = $(this).data('contentname');
+            var contentid = $(this).data('contentid');
+
+            var strings = [
+                {
+                    key: 'copycontent',
+                    component: 'core_contentbank'
+                },
+                {
+                    key: 'copy',
+                    component: 'moodle'
+                },
+            ];
+
+            var saveButtonText = '';
+            Str.get_strings(strings).then(function(langStrings) {
+                var modalTitle = langStrings[0];
+                saveButtonText = langStrings[1];
+
+                return ModalFactory.create({
+                    title: modalTitle,
+                    body: Templates.render('core_contentbank/copycontent', {'contentid': contentid, 'name': contentname}),
+                    type: ModalFactory.types.SAVE_CANCEL
+                });
+            }).then(function(modal) {
+                modal.setSaveButtonText(saveButtonText);
+                modal.getRoot().on(ModalEvents.save, function(e) {
+                    // The action is now confirmed, sending an action for it.
+                    var newname = $("#newname").val().trim();
+                    if (newname) {
+                        copyContent(contentid, newname);
                     } else {
                         var errorStrings = [
                             {
@@ -395,6 +460,40 @@ function($, Ajax, Notification, Str, Templates, Url, ModalFactory, ModalEvents) 
                 Notification.fetchNotifications();
             }
             return;
+        }).catch(Notification.exception);
+    }
+
+    /**
+     * Copy content in the content bank.
+     *
+     * @param {int} contentid The content to rename.
+     * @param {string} name The new name for the content.
+     */
+    function copyContent(contentid, name) {
+        var request = {
+            methodname: 'core_contentbank_copy_content',
+            args: {
+                contentid: contentid,
+                name: name
+            }
+        };
+        Ajax.call([request])[0].then(function(data) {
+            if (data.id == 0) {
+                // Fetch error notifications.
+                Notification.addNotification({
+                    message: data.warnings[0].message,
+                    type: 'error'
+                });
+                Notification.fetchNotifications();
+                return data.warnings[0].message;
+            } else {
+                let params = {
+                    id: data.id,
+                    statusmsg: 'contentcopied'
+                };
+                // Redirect to the content view page and display the message as a notification.
+                window.location.href = Url.relativeUrl('contentbank/view.php', params, false);
+            }
         }).catch(Notification.exception);
     }
 

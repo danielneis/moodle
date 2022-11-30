@@ -139,7 +139,7 @@ class viewcontent implements renderable, templatable {
         if ($this->contenttype->can_download($this->content)) {
             $url = new moodle_url($this->contenttype->get_download_url($this->content));
             $options[get_string('download')] = [
-                'url' => $url->out()
+                'url' => $url->out(false)
             ];
         }
 

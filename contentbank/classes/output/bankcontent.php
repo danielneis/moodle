@@ -150,7 +150,7 @@ class bankcontent implements renderable, templatable {
         if (has_capability('moodle/contentbank:deleteanycontent', $this->context)) {
             $trashlabel = get_string('trash', 'contentbank');
             $options[$trashlabel] = [
-                'url' => (new moodle_url('/contentbank/trash.php', ['contextid' => $this->context->id]))->out()
+                'url' => (new moodle_url('/contentbank/trash.php', ['contextid' => $this->context->id]))->out(false)
             ];
         }
 
@@ -176,7 +176,7 @@ class bankcontent implements renderable, templatable {
                 $icon = 't/hide';
             }
             $options[$displaylabel] = [
-                'url' => (new moodle_url($seturl))->out()
+                'url' => (new moodle_url($seturl))->out(false)
             ];
         }
         $dropdown = [];
@@ -214,7 +214,7 @@ class bankcontent implements renderable, templatable {
         $data = new stdClass();
 
         $rooturl = new \moodle_url('/contentbank/index.php', ['contextid' => $this->context->id]);
-        $data->root = $rooturl->out();
+        $data->root = $rooturl->out(false);
 
         $data->breadcrumbs = $this->breadcrumbs;
 
@@ -257,7 +257,7 @@ class bankcontent implements renderable, templatable {
                 'size' => display_size($filesize),
                 'type' => $mimetype,
                 'author' => fullname($author),
-                'visibilityunlisted' => $content->get_visibility() == content::VISIBILITY_UNLISTED
+                'visibilityunlisted' => (($content->get_visibility() == content::VISIBILITY_UNLISTED) && get_user_preferences('contentbank_displayunlisted', 1) == 1)
             );
             $instancedata = $handler->get_instance_data($content->get_id());
             foreach ($instancedata as $d) {

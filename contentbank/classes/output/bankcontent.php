@@ -20,6 +20,7 @@ use context_coursecat;
 use core_contentbank\content;
 use core_contentbank\contentbank;
 use core_customfield\output\field_data;
+use moodle_url;
 use renderable;
 use templatable;
 use renderer_base;
@@ -94,6 +95,108 @@ class bankcontent implements renderable, templatable {
         $this->folders = $folders;
         $this->folderid = $folderid;
         $this->breadcrumbs = \core_contentbank\contentbank::make_breadcrumb($folderid, $this->context->id);
+    }
+    /**
+     * Get the content of the "More" dropdown in the tertiary navigation
+     *
+     * @return array|null The options to be displayed in a dropdown in the tertiary navigation
+     * @throws \moodle_exception
+     */
+    protected function get_edit_actions_dropdown(): ?array {
+        global $PAGE;
+        $options = [];
+        if (has_capability('moodle/contentbank:createfolder', $this->context) ||
+            user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'editingteacher']))) {
+            if ($this->folderid) {
+                $folderrecord = $DB->get_record('contentbank_folders', ['id' => $this->folderid, 'contextid' => $this->context->id]);
+                $folder = new \core_contentbank\folder($folderrecord);
+                $label = get_string('renamefolder', 'core_contentbank');
+
+                $options[$label] = [
+                    'data-action' => 'renamefolder',
+                    'data-contextid' => $this->context->id,
+                    'data-folderid' => $this->folderid,
+                ];
+
+                $PAGE->requires->js_call_amd(
+                    'core_contentbank/rename_folder',
+                    'initModal',
+                    [
+                        '[data-action="renamefolder"]',
+                        \core_contentbank\form\rename_folder::class,
+                        $this->context->id, $folderrecord->parent, $this->folderid, $folderrecord->name
+                    ]
+                );
+
+
+                if ($folder->is_empty()) {
+                    $label = get_string('deletefolder', 'core_contentbank');
+
+                    $options[$label] = [
+                        'data-action' => 'deletefolder',
+                        'data-contextid' => $this->context->id,
+                        'data-parentid' => $this->folderid,
+                    ];
+
+                    $PAGE->requires->js_call_amd(
+                        'core_contentbank/delete_folder',
+                        'initModal',
+                        ['[data-action="deletefolder"]', $this->context->id, $this->folderid]
+                    );
+                }
+            }
+        }
+
+        if (has_capability('moodle/contentbank:deleteanycontent', $this->context)) {
+            $trashlabel = get_string('trash', 'contentbank');
+            $options[$trashlabel] = [
+                'url' => (new moodle_url('/contentbank/trash.php', ['contextid' => $this->context->id]))->out()
+            ];
+        }
+
+        if (has_capability('moodle/contentbank:viewunlistedcontent', $this->context)) {
+            $setdisplay = optional_param('displayunlisted', null, PARAM_INT);
+            if (is_null($setdisplay)) {
+                $display = get_user_preferences('contentbank_displayunlisted', 1);
+            } else {
+                set_user_preference('contentbank_displayunlisted', $setdisplay);
+                $display = $setdisplay;
+            }
+            $search = optional_param('search', '', PARAM_CLEAN);
+            $seturl = new moodle_url('/contentbank/index.php',
+                ['contextid' => $this->context->id, 'search' => $search, 'folderid' => $this->folderid]);
+
+            if ($display) {
+                $displaylabel = get_string('dontdisplayunlisted', 'contentbank');
+                $seturl->param('displayunlisted', 0);
+                $icon = 't/show';
+            } else {
+                $displaylabel = get_string('displayunlisted', 'contentbank');
+                $seturl->param('displayunlisted', 1);
+                $icon = 't/hide';
+            }
+            $options[$displaylabel] = [
+                'url' => (new moodle_url($seturl))->out()
+            ];
+        }
+        $dropdown = [];
+        if ($options) {
+            foreach ($options as $key => $attribs) {
+                $url = $attribs['url'] ?? '#';
+                $dropdown['options'][] = [
+                    'label' => $key,
+                    'url' => $url,
+                    'attributes' => array_map(function ($key, $value) {
+                        return [
+                            'name' => $key,
+                            'value' => $value
+                        ];
+                    }, array_keys($attribs), $attribs)
+                ];
+            }
+        }
+
+        return $dropdown;
     }
 
     /**
@@ -211,6 +314,7 @@ class bankcontent implements renderable, templatable {
             $singleselect->set_label($strchoosecontext, ['class' => 'sr-only']);
             $data->allowedcontexts = $singleselect->export_for_template($output);
         }
+        $data->actionmenu = $this->get_edit_actions_dropdown();
 
         return $data;
     }

@@ -64,7 +64,7 @@ class viewcontent implements renderable, templatable {
         global $PAGE;
         $options = [];
         $context = \context::instance_by_id($this->content->get_contextid());
-        if ($this->contenttype->can_manage($this->content)) {
+        if ($this->contenttype->can_manage($this->content) && !$this->content->is_deleted()) {
             // Add the visibility item to the menu.
             if (has_capability('moodle/contentbank:viewunlistedcontent', $context)) {
                 switch($this->content->get_visibility()) {
@@ -148,16 +148,16 @@ class viewcontent implements renderable, templatable {
             if ($this->content->is_deleted()) {
                 $options[get_string('restorecontent', 'contentbank')] = [
                     'data-action' => 'restorecontent',
-                    'data-contentname' => $content->get_name(),
-                    'data-uses' => count($content->get_uses()),
-                    'data-contentid' => $content->get_id(),
+                    'data-contentname' => $this->content->get_name(),
+                    'data-uses' => count($this->content->get_uses()),
+                    'data-contentid' => $this->content->get_id(),
                     'data-contextid' => $context->id,
                 ];
                 $options[get_string('deleteforever', 'contentbank')] = [
                     'data-action' => 'deletecontentforever',
-                    'data-contentname' => $content->get_name(),
-                    'data-uses' => count($content->get_uses()),
-                    'data-contentid' => $content->get_id(),
+                    'data-contentname' => $this->content->get_name(),
+                    'data-uses' => count($this->content->get_uses()),
+                    'data-contentid' => $this->content->get_id(),
                     'data-contextid' => $context->id,
                 ];
 

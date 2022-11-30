@@ -288,7 +288,7 @@ class helper_test extends \advanced_testcase {
         $expected = [
             'customfield_mycheckbox' => '1',
             'customfield_mydate' => strtotime('2019-10-01'),
-            'customfield_myselect' => 2,
+            'customfield_myselect' => 'Green',
             'customfield_mytext' => 'Hello',
         ];
 

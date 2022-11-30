@@ -63,28 +63,31 @@ class viewcontent implements renderable, templatable {
     protected function get_edit_actions_dropdown(): ?array {
         global $PAGE;
         $options = [];
+        $context = \context::instance_by_id($this->content->get_contextid());
         if ($this->contenttype->can_manage($this->content)) {
             // Add the visibility item to the menu.
-            switch($this->content->get_visibility()) {
-                case content::VISIBILITY_UNLISTED:
-                    $visibilitylabel = get_string('visibilitysetpublic', 'core_contentbank');
-                    $newvisibility = content::VISIBILITY_PUBLIC;
-                    break;
-                case content::VISIBILITY_PUBLIC:
-                    $visibilitylabel = get_string('visibilitysetunlisted', 'core_contentbank');
-                    $newvisibility = content::VISIBILITY_UNLISTED;
-                    break;
-                default:
-                    $url = new \moodle_url('/contentbank/index.php', ['contextid' => $this->content->get_contextid()]);
-                    throw new moodle_exception('contentvisibilitynotfound', 'error', $url, $this->content->get_visibility());
-            }
+            if (has_capability('moodle/contentbank:viewunlistedcontent', $context)) {
+                switch($this->content->get_visibility()) {
+                    case content::VISIBILITY_UNLISTED:
+                        $visibilitylabel = get_string('visibilitysetpublic', 'core_contentbank');
+                        $newvisibility = content::VISIBILITY_PUBLIC;
+                        break;
+                    case content::VISIBILITY_PUBLIC:
+                        $visibilitylabel = get_string('visibilitysetunlisted', 'core_contentbank');
+                        $newvisibility = content::VISIBILITY_UNLISTED;
+                        break;
+                    default:
+                        $url = new \moodle_url('/contentbank/index.php', ['contextid' => $this->content->get_contextid()]);
+                        throw new moodle_exception('contentvisibilitynotfound', 'error', $url, $this->content->get_visibility());
+                }
 
-            if ($visibilitylabel) {
-                $options[$visibilitylabel] = [
-                    'data-action' => 'setcontentvisibility',
-                    'data-visibility' => $newvisibility,
-                    'data-contentid' => $this->content->get_id(),
-                ];
+                if ($visibilitylabel) {
+                    $options[$visibilitylabel] = [
+                        'data-action' => 'setcontentvisibility',
+                        'data-visibility' => $newvisibility,
+                        'data-contentid' => $this->content->get_id(),
+                    ];
+                }
             }
 
             // Add the rename content item to the menu.
@@ -108,6 +111,29 @@ class viewcontent implements renderable, templatable {
                     ]
                 );
             }
+
+            // Add the copy content item to the menu.
+            $options[get_string('copycontent', 'contentbank')] = [
+                'data-action' => 'copycontent',
+                'data-contentname' => get_string('copyof', 'contentbank', $this->content->get_name()),
+                'data-contentid' => $this->content->get_id(),
+            ];
+
+            // Add the move content item to the menu.
+            $options[get_string('changefolder', 'contentbank')] = [
+                'data-action' => 'movecontent',
+                'data-contentname' => $this->content->get_name(),
+                'data-contentid' => $this->content->get_id(),
+            ];
+            $PAGE->requires->js_call_amd(
+                'core_contentbank/move_content',
+                'initModal',
+                [
+                    '[data-action="movecontent"]',
+                    \core_contentbank\form\move_content::class,
+                    $context->id, $this->content->get_folderid(), $this->content->get_id()
+                ]
+            );
         }
 
         if ($this->contenttype->can_download($this->content)) {
@@ -119,13 +145,31 @@ class viewcontent implements renderable, templatable {
 
         // Add the delete content item to the menu.
         if ($this->contenttype->can_delete($this->content)) {
-            $options[get_string('delete')] = [
-                'data-action' => 'deletecontent',
-                'data-contentname' => $this->content->get_name(),
-                'data-uses' => count($this->content->get_uses()),
-                'data-contentid' => $this->content->get_id(),
-                'data-contextid' => $this->content->get_contextid(),
-            ];
+            if ($this->content->is_deleted()) {
+                $options[get_string('restorecontent', 'contentbank')] = [
+                    'data-action' => 'restorecontent',
+                    'data-contentname' => $content->get_name(),
+                    'data-uses' => count($content->get_uses()),
+                    'data-contentid' => $content->get_id(),
+                    'data-contextid' => $context->id,
+                ];
+                $options[get_string('deleteforever', 'contentbank')] = [
+                    'data-action' => 'deletecontentforever',
+                    'data-contentname' => $content->get_name(),
+                    'data-uses' => count($content->get_uses()),
+                    'data-contentid' => $content->get_id(),
+                    'data-contextid' => $context->id,
+                ];
+
+            } else {
+                $options[get_string('delete')] = [
+                    'data-action' => 'deletecontent',
+                    'data-contentname' => $this->content->get_name(),
+                    'data-uses' => count($this->content->get_uses()),
+                    'data-contentid' => $this->content->get_id(),
+                    'data-contextid' => $this->content->get_contextid(),
+                ];
+            }
         }
 
         $dropdown = [];
@@ -161,6 +205,10 @@ class viewcontent implements renderable, templatable {
         // Get the content type html.
         $contenthtml = $this->contenttype->get_view_content($this->content);
         $data->contenthtml = $contenthtml;
+
+        $handler = \core_contentbank\customfield\content_handler::create();
+        $customfields = $handler->get_instance_data($this->content->get_id());
+        $data->customfieldshtml = $handler->display_custom_fields_data($customfields);
 
         // Check if the user can edit this content type.
         if ($this->contenttype->can_edit($this->content)) {

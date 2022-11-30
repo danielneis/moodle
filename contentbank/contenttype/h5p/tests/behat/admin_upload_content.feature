@@ -97,3 +97,21 @@ Feature: H5P file upload to content bank for admins
     And I switch to the main frame
     And I navigate to "H5P > Manage H5P content types" in site administration
     And I should see "Fill in the Blanks"
+
+  Scenario: Admins can upload .h5p extension files in a folder in the content bank
+    Given the following "contenbank folders" exist:
+      | name        | parent |
+      | First level | 0      |
+    Given I am viewing content bank
+    When I click on "First level" "link"
+    And I should not see "filltheblanks.h5p"
+    And I click on "Upload" "link"
+    And I click on "Choose a file..." "button"
+    And I click on "Private files" "link" in the ".fp-repo-area" "css_element"
+    And I click on "filltheblanks.h5p" "link"
+    And I click on "Select this file" "button"
+    And I click on "Save changes" "button"
+    And I wait until the page is ready
+    Then I should see "filltheblanks.h5p"
+    And I click on "/" "link"
+    And I should not see "filltheblanks.h5p"

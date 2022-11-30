@@ -57,11 +57,23 @@ class provider implements
         $collection->add_database_table('contentbank_content', [
             'name' => 'privacy:metadata:content:name',
             'contenttype' => 'privacy:metadata:content:contenttype',
+            'folderid' => 'privacy:metadata:content:folderid',
             'usercreated' => 'privacy:metadata:content:usercreated',
             'usermodified' => 'privacy:metadata:content:usermodified',
             'timecreated' => 'privacy:metadata:content:timecreated',
             'timemodified' => 'privacy:metadata:content:timemodified',
         ], 'privacy:metadata:contentbankcontent');
+
+        $collection->add_database_table('contentbank_folders', [
+            'name' => 'privacy:metadata:content:name',
+            'parent' => 'privacy:metadata:content:parent',
+            'depth' => 'privacy:metadata:content:depth',
+            'path' => 'privacy:metadata:content:path',
+            'usercreated' => 'privacy:metadata:content:usercreated',
+            'usermodified' => 'privacy:metadata:content:usermodified',
+            'timecreated' => 'privacy:metadata:content:timecreated',
+            'timemodified' => 'privacy:metadata:content:timemodified',
+        ], 'privacy:metadata:contentbankfolder');
 
         return $collection;
     }
@@ -112,6 +124,24 @@ class provider implements
         $contextlist = new contextlist();
         $contextlist->add_from_sql($sql, $params);
 
+        $sql = "SELECT DISTINCT ctx.id
+                  FROM {context} ctx
+                  JOIN {contentbank_folders} cb
+                       ON cb.contextid = ctx.id
+                 WHERE cb.usercreated = :userid
+                       AND (ctx.contextlevel = :contextlevel1
+                           OR ctx.contextlevel = :contextlevel2
+                           OR ctx.contextlevel = :contextlevel3)";
+
+        $params = [
+            'userid'        => $userid,
+            'contextlevel1' => CONTEXT_SYSTEM,
+            'contextlevel2' => CONTEXT_COURSECAT,
+            'contextlevel3' => CONTEXT_COURSE,
+        ];
+
+        $contextlist->add_from_sql($sql, $params);
+
         return $contextlist;
     }
 
@@ -135,6 +165,16 @@ class provider implements
 
         $sql = "SELECT cb.usercreated as userid
                   FROM {contentbank_content} cb
+                 WHERE cb.contextid = :contextid";
+
+        $params = [
+            'contextid' => $context->id
+        ];
+
+        $userlist->add_from_sql('userid', $sql, $params);
+
+        $sql = "SELECT cb.usercreated as userid
+                  FROM {contentbank_folders} cb
                  WHERE cb.contextid = :contextid";
 
         $params = [
@@ -176,10 +216,11 @@ class provider implements
                        cb.usermodified,
                        cb.timecreated,
                        cb.timemodified,
-                       cb.contextid
+                       cb.contextid,
+                       cb.folderid
                   FROM {contentbank_content} cb
                  WHERE cb.usercreated = :userid
-                       AND cb.contextid {$contextsql}
+                   AND cb.contextid {$contextsql}
                  ORDER BY cb.contextid";
 
         $params = ['userid' => $userid] + $contextparams;
@@ -201,6 +242,7 @@ class provider implements
             $data[] = (object) [
                 'name' => $content->name,
                 'contenttype' => $content->contenttype,
+                'folderid' => $content->folderid,
                 'usercreated' => transform::user($content->usercreated),
                 'usermodified' => transform::user($content->usermodified),
                 'timecreated' => transform::datetime($content->timecreated),

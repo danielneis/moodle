@@ -287,6 +287,10 @@ class behat_core_generator extends behat_generator_base {
                 'required' => array('contextlevel', 'reference', 'contenttype', 'user', 'contentname'),
                 'switchids' => array('user' => 'userid')
             ],
+            'contenbank folders' => [
+                'datagenerator' => 'contentbank_folder',
+                'required' => array('name')
+            ],
             'badge external backpacks' => [
                 'singular' => 'badge external backpack',
                 'datagenerator' => 'badge_external_backpack',

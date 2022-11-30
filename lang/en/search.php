@@ -115,6 +115,7 @@ $string['search'] = 'Search';
 $string['search:message_received'] = 'Messages - received';
 $string['search:message_sent'] = 'Messages - sent';
 $string['search:mycourse'] = 'My courses';
+$string['search:content'] = 'Content Bank';
 $string['search:course'] = 'Courses';
 $string['search:course_teacher'] = 'Course Teacher';
 $string['search:section'] = 'Course sections';

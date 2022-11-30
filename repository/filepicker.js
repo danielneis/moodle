@@ -372,14 +372,12 @@ YUI.add('moodle-core_filepicker', function(Y) {
         /** initialize table view */
         var initialize_table_view = function() {
             var cols = [
+                {key: "customfield_code", label: 'Código', allowHTML: true, formatter: formatValue,
+                    sortable: true, sortFn: sortFoldersFirst},
                 {key: "displayname", label: M.util.get_string('name', 'moodle'), allowHTML: true, formatter: formatTitle,
                     sortable: true, sortFn: sortFoldersFirst},
                 {key: "datemodified", label: M.util.get_string('lastmodified', 'moodle'), allowHTML: true, formatter: formatValue,
                     sortable: true, sortFn: sortFoldersFirst},
-                {key: "size", label: M.util.get_string('size', 'repository'), allowHTML: true, formatter: formatValue,
-                    sortable: true, sortFn: sortFoldersFirst},
-                {key: "mimetype", label: M.util.get_string('type', 'repository'), allowHTML: true,
-                    sortable: true, sortFn: sortFoldersFirst}
             ];
 
             // Generate a checkbox based on toggleall's specification
@@ -1217,7 +1215,7 @@ M.core_filepicker.init = function(Y, options) {
             selectnode.one('form #filesourcekey-'+client_id).set('value', args.sourcekey);
 
             // display static information about a file (when known)
-            var attrs = ['datemodified','datecreated','size','license','author','dimensions'];
+            var attrs = ['customfield_code', 'datemodified','datecreated','size','license','author','dimensions'];
             for (var i in attrs) {
                 if (selectnode.one('.fp-'+attrs[i])) {
                     var value = (args[attrs[i]+'_f']) ? args[attrs[i]+'_f'] : (args[attrs[i]] ? args[attrs[i]] : '');

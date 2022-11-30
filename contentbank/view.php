@@ -35,7 +35,14 @@ $PAGE->requires->js_call_amd('core_contentbank/actions', 'init');
 
 $record = $DB->get_record('contentbank_content', ['id' => $id], '*', MUST_EXIST);
 $context = context::instance_by_id($record->contextid, MUST_EXIST);
-require_capability('moodle/contentbank:access', $context);
+
+$breadcrumb = \core_contentbank\contentbank::make_breadcrumb($record->parent, $context->id);
+
+if (isset($breadcrumb[0]) && (!$breadcrumb[0]['name'] == 'Professores') &&
+     user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'editingteacher']))) {
+
+    require_capability('moodle/contentbank:access', $context);
+}
 
 $statusmsg = optional_param('statusmsg', '', PARAM_ALPHANUMEXT);
 $errormsg = optional_param('errormsg', '', PARAM_ALPHANUMEXT);
@@ -70,6 +77,14 @@ if ($context->id == \context_system::instance()->id) {
     $PAGE->set_context(context_course::instance($context->id));
 } else {
     $PAGE->set_context($context);
+}
+
+if ($content->is_deleted()) {
+    $PAGE->navbar->add(get_string('trash', 'contentbank'), new moodle_url('/contentbank/trash.php', ['contextid' => $context->id]));
+} else {
+    foreach (\core_contentbank\contentbank::make_breadcrumb($record->folderid, $context->id) as $bc) {
+        $PAGE->navbar->add($bc['name'], $bc['link']);
+    }
 }
 $PAGE->navbar->add($record->name);
 $title .= ": ".$record->name;

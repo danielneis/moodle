@@ -1525,4 +1525,21 @@ EOD;
             "data generators yet. Class {$classname} not found.");
     }
 
+    /**
+     * Create a new folder in the content bank
+     *
+     * @param   array $record Array with 'name', 'parent' and 'contextid' of the folder
+     * @param array $options
+     * @return  \core_contentbank\folder   The created folder
+     */
+    public function create_contentbank_folder($record=null, array $options=null) : core_contentbank\folder {
+        $record = (array)$record;
+
+        $content = new stdClass();
+        $content->name = $record['name'] ?? 'New folder';
+        $content->contextid = $record['contextid'] ?? \context_system::instance()->id;
+        $content->parent = $record['parent'] ?? 0;
+
+        return \core_contentbank\folder::create_folder($content);
+    }
 }

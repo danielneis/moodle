@@ -30,8 +30,9 @@ import {get_string as getString} from 'core/str';
  * @param {String} formClass
  * @param {Integer} contextId
  * @param {Integer} contentId
+ * @param {Integer} folderId
  */
-export const initModal = (elementSelector, formClass, contextId, contentId) => {
+export const initModal = (elementSelector, formClass, contextId, contentId, folderId) => {
     const element = document.querySelector(elementSelector);
     element.addEventListener('click', function(e) {
         e.preventDefault();
@@ -39,6 +40,7 @@ export const initModal = (elementSelector, formClass, contextId, contentId) => {
             formClass,
             args: {
                 contextid: contextId,
+                folderid: folderId,
                 id: contentId,
             },
             modalConfig: {title: getString('upload', 'contentbank')},

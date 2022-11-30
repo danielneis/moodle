@@ -50,7 +50,7 @@ class editor extends edit_content {
     /**
      * Defines the form fields.
      */
-    protected function definition() {
+    public function definition() {
         global $DB, $OUTPUT;
 
         $mform = $this->_form;
@@ -105,6 +105,7 @@ class editor extends edit_content {
         $mformid = 'coolh5peditor';
         $mform->setAttributes(array('id' => $mformid) + $mform->getAttributes());
 
+
         if ($errors || $notifications) {
             // Show the error messages and a Cancel button.
             foreach ($errors as $error) {
@@ -116,6 +117,7 @@ class editor extends edit_content {
             $mform->addElement('cancel', 'cancel', get_string('back'));
         } else {
             $this->h5peditor->add_editor_to_form($mform);
+            parent::definition();
             $this->add_action_buttons();
         }
     }

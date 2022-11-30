@@ -37,6 +37,9 @@ class upload_files extends \core_form\dynamic_form {
         $mform->addElement('hidden', 'id');
         $mform->setType('id', PARAM_INT);
 
+        $mform->addElement('hidden', 'folderid');
+        $mform->setType('folderid', PARAM_INT);
+
         $mform->addElement('filepicker', 'file', get_string('file', 'core_contentbank'), null, $this->get_options());
         $mform->addHelpButton('file', 'file', 'core_contentbank');
         $mform->addRule('file', null, 'required');
@@ -67,7 +70,29 @@ class upload_files extends \core_form\dynamic_form {
      * by calling $this->optional_param()
      */
     protected function check_access_for_dynamic_submission(): void {
-        require_capability('moodle/contentbank:upload', $this->get_context_for_dynamic_submission());
+        global $DB, $USER;
+
+        $contextid = $this->optional_param('contextid', \context_system::instance()->id, PARAM_INT);
+        $folderid = $this->optional_param('folderid', 0, PARAM_INT);
+        if ($folderid) {
+            $folderrecord = $DB->get_record('contentbank_folders', ['id' => $folderid, 'contextid' => $contextid]);
+            $foldersinpath = explode('/', $folderrecord->path);
+            $topfolder = $foldersinpath[1];
+            if ($DB->get_field('contentbank_folders', 'name', ['id' => $topfolder]) == 'Professores') {
+                $systemctx = \context_system::instance();
+                $canupload =
+                    user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'p_professor']), $systemctx->id) ||
+                    user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'p_materiais']), $systemctx->id) ||
+                    user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'p_administrador']), $systemctx->id) ||
+                    user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'p_colabobrador']), $systemctx->id) ||
+                    has_capability('moodle/contentbank:upload', $this->get_context_for_dynamic_submission());
+                if ($canupload) {
+                    return;
+                }
+            }
+        } else {
+            require_capability('moodle/contentbank:upload', $this->get_context_for_dynamic_submission());
+        }
 
         // Check the context used by the content bank is allowed.
         $cb = new \core_contentbank\contentbank();
@@ -157,7 +182,9 @@ class upload_files extends \core_form\dynamic_form {
                     $contenttype = $content->get_content_type_instance();
                     $content = $contenttype->replace_content($file, $content);
                 } else {
-                    $content = $cb->create_content_from_file($this->get_context_for_dynamic_submission(), $USER->id, $file);
+                    $folderid = $this->optional_param('folderid', 0, PARAM_INT);
+                    $context = $this->get_context_for_dynamic_submission();
+                    $content = $cb->create_content_from_file($context, $USER->id, $file, $folderid);
                 }
                 $params = ['id' => $content->get_id(), 'contextid' => $this->get_context_for_dynamic_submission()->id];
                 $url = new \moodle_url('/contentbank/view.php', $params);
@@ -197,6 +224,7 @@ class upload_files extends \core_form\dynamic_form {
     public function set_data_for_dynamic_submission(): void {
         $data = (object)[
             'contextid' => $this->optional_param('contextid', null, PARAM_INT),
+            'folderid' => $this->optional_param('folderid', 0, PARAM_INT),
             'id' => $this->optional_param('id', null, PARAM_INT),
         ];
         $this->set_data($data);

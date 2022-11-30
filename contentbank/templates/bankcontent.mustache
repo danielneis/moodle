@@ -19,6 +19,13 @@
 
     Example context (json):
     {
+        "root": "http://something/contentbank/index.php",
+        "breadcrumb": [
+            {
+                "name": "First level",
+                "link": "http://something/contentbank/index.php?folderid=1"
+            }
+        ],
         "contents": [
             {
                 "name": "Accordion.h5p",
@@ -116,8 +123,11 @@ data-region="contentbank">
     <div class="pb-3 border">
         <div class="content-bank">
             <div class="cb-navbar bg-light p-2 border-bottom">
-                <div class="cb-navbar-breadbrumb">
-                    {{#pix}} i/folder {{/pix}}
+                <div class="cb-navbar-breadcrumb">
+                    <a href="{{{root}}}">{{#pix}} i/folder {{/pix}}</a>
+                    {{#breadcrumbs}}
+                     / <a href="{{{link}}}">{{name}}</a>
+                    {{/breadcrumbs}}
                 </div>
                 <div class="cb-navbar-totalsearch d-none">
                 </div>
@@ -126,10 +136,37 @@ data-region="contentbank">
                 <div role="{{#viewlist}}table{{/viewlist}}{{^viewlist}}list{{/viewlist}}" aria-label="{{#str}} contentbank, contentbank {{/str}}"
                     class="cb-content-wrapper d-flex px-2" data-region="filearea">
                     <div {{#viewlist}}role="row"{{/viewlist}} class="cb-heading bg-white">
+                        <div {{#viewlist}}role="columnheader"{{/viewlist}} aria-sort="none" class="cb-code cb-column d-flex">
+                            <button class="btn btn-block cb-btnsort dir-none text-left" data-string="contentcode" data-action="sortcode"
+                                title="{{#str}} sortbyx, core, {{#str}} code, contentbank {{/str}} {{/str}}">
+                                <span class="title">{{#str}} code, contentbank {{/str}}</span>
+                                <span class="default">{{#pix}} t/sort, core {{/pix}}</span>
+                                <span class="desc">{{#pix}} t/sort_desc, core {{/pix}}</span>
+                                <span class="asc">{{#pix}} t/sort_asc, core {{/pix}}</span>
+                            </button>
+                        </div>
                         <div {{#viewlist}}role="columnheader"{{/viewlist}} aria-sort="none" class="cb-file cb-column d-flex">
                             <button class="btn btn-block cb-btnsort dir-none text-left" data-string="contentname" data-action="sortname"
                                 title="{{#str}} sortbyx, core, {{#str}} contentname, contentbank {{/str}} {{/str}}">
                                 <span class="title">{{#str}} contentname, contentbank {{/str}}</span>
+                                <span class="default">{{#pix}} t/sort, core {{/pix}}</span>
+                                <span class="desc">{{#pix}} t/sort_desc, core {{/pix}}</span>
+                                <span class="asc">{{#pix}} t/sort_asc, core {{/pix}}</span>
+                            </button>
+                        </div>
+                        <div {{#viewlist}}role="columnheader"{{/viewlist}} aria-sort="none" class="cb-cftype cb-column d-flex">
+                            <button class="btn btn-block cb-btnsort dir-none text-left" data-string="contentcftype" data-action="sortcftype"
+                                title="{{#str}} sortbyx, core, {{#str}} type, contentbank {{/str}} {{/str}}">
+                                <span class="title">{{#str}} contenttype, contentbank {{/str}}</span>
+                                <span class="default">{{#pix}} t/sort, core {{/pix}}</span>
+                                <span class="desc">{{#pix}} t/sort_desc, core {{/pix}}</span>
+                                <span class="asc">{{#pix}} t/sort_asc, core {{/pix}}</span>
+                            </button>
+                        </div>
+                        <div {{#viewlist}}role="columnheader"{{/viewlist}} aria-sort="none" class="cb-language cb-column d-flex">
+                            <button class="btn btn-block cb-btnsort dir-none text-left" data-string="contentlanguage" data-action="sortlanguage"
+                                title="{{#str}} sortbyx, core, {{#str}} language, contentbank {{/str}} {{/str}}">
+                                <span class="title">{{#str}} language, contentbank {{/str}}</span>
                                 <span class="default">{{#pix}} t/sort, core {{/pix}}</span>
                                 <span class="desc">{{#pix}} t/sort_desc, core {{/pix}}</span>
                                 <span class="asc">{{#pix}} t/sort_asc, core {{/pix}}</span>
@@ -148,24 +185,6 @@ data-region="contentbank">
                             <button class="btn btn-block cb-btnsort dir-none text-left" data-string="lastmodified" data-action="sortdate"
                             title="{{#str}} sortbyx, core, {{#str}} lastmodified, contentbank {{/str}} {{/str}}">
                                 <span class="title">{{#str}} lastmodified, contentbank {{/str}}</span>
-                                <span class="default">{{#pix}} t/sort, core {{/pix}}</span>
-                                <span class="desc">{{#pix}} t/sort_desc, core {{/pix}}</span>
-                                <span class="asc">{{#pix}} t/sort_asc, core {{/pix}}</span>
-                            </button>
-                        </div>
-                        <div {{#viewlist}}role="columnheader"{{/viewlist}} aria-sort="none" class="cb-size cb-column d-flex">
-                            <button class="btn btn-block cb-btnsort dir-none text-left" data-string="size" data-action="sortsize"
-                            title="{{#str}} sortbyx, core, {{#str}} size, contentbank {{/str}} {{/str}}">
-                                <span class="title">{{#str}} size, contentbank {{/str}}</span>
-                                <span class="default">{{#pix}} t/sort, core {{/pix}}</span>
-                                <span class="desc">{{#pix}} t/sort_desc, core {{/pix}}</span>
-                                <span class="asc">{{#pix}} t/sort_asc, core {{/pix}}</span>
-                            </button>
-                        </div>
-                        <div {{#viewlist}}role="columnheader"{{/viewlist}} aria-sort="none" class="cb-type cb-column d-flex">
-                            <button class="btn btn-block cb-btnsort dir-none text-left" data-string="type" data-action="sorttype"
-                            title="{{#str}} sortbyx, core, {{#str}} type, contentbank {{/str}} {{/str}}">
-                                <span class="title">{{#str}} type, contentbank {{/str}}</span>
                                 <span class="default">{{#pix}} t/sort, core {{/pix}}</span>
                                 <span class="desc">{{#pix}} t/sort_desc, core {{/pix}}</span>
                                 <span class="asc">{{#pix}} t/sort_asc, core {{/pix}}</span>
@@ -191,6 +210,9 @@ data-region="contentbank">
                         data-timemodified="{{ timemodified }}"
                         data-type="{{ type }}"
                         data-author="{{ author }}">
+                        <div {{#viewlist}}role="cell"{{/viewlist}} class="cb-code cb-column small">
+                            {{ customfield_code }}
+                        </div>
                         <div {{#viewlist}}role="cell"{{/viewlist}} class="cb-file cb-column position-relative">
                             <div class="cb-thumbnail" style="background-image: url('{{{ icon }}}');">
                             </div>
@@ -200,19 +222,19 @@ data-region="contentbank">
                                 </span>
                             </a>
                         </div>
+                        <div {{#viewlist}}role="cell"{{/viewlist}} class="cb-cftype cb-column small">
+                            {{ customfield_doctype }}
+                        </div>
+                        <div {{#viewlist}}role="cell"{{/viewlist}} class="cb-language cb-column small">
+                            {{ customfield_language }}
+                        </div>
                         <div {{#viewlist}}role="cell"{{/viewlist}} class="cb-uses cb-column small">
                             {{ uses }}
                         </div>
                         <div {{#viewlist}}role="cell"{{/viewlist}} class="cb-date cb-column small">
                             {{#userdate}} {{ timemodified }}, {{#str}} strftimedatetimeshort, core_langconfig {{/str}} {{/userdate}}
                         </div>
-                        <div {{#viewlist}}role="cell"{{/viewlist}} class="cb-size cb-column small">
-                            {{ size }}
-                        </div>
-                        <div {{#viewlist}}role="cell"{{/viewlist}} class="cb-type cb-column small">
-                            {{{ type }}}
-                        </div>
-                        <div {{#viewlist}}role="cell"{{/viewlist}} class="cb-type cb-column last small">
+                        <div {{#viewlist}}role="cell"{{/viewlist}} class="cb-author cb-column last small">
                             {{{ author }}}
                         </div>
                     </div>

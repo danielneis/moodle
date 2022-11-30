@@ -56,6 +56,13 @@ class repository_contentbank extends repository {
             if (is_array($params) && isset($params['contextid'])) {
                 $context = context::instance_by_id(clean_param($params['contextid'], PARAM_INT));
             }
+            if (empty($params['folderid'])) {
+                $folderid = 0;
+            } else {
+                $folderid = $params['folderid'];
+            }
+        } else {
+            $folderid = 0;
         }
         // Return the current context if the context was not specified in the encoded path.
         // The current context should be an instance of context_system, context_coursecat or course related contexts.
@@ -78,7 +85,7 @@ class repository_contentbank extends repository {
         $ret['path'] = [];
 
         // Get the content bank browser for the specified context.
-        if ($browser = \repository_contentbank\helper::get_contentbank_browser($context)) {
+        if ($browser = \repository_contentbank\helper::get_contentbank_browser($context, $folderid)) {
             $manageurl = new moodle_url('/contentbank/index.php', ['contextid' => $context->id]);
             $canaccesscontent = has_capability('moodle/contentbank:access', $context);
             $ret['manage'] = $canaccesscontent ? $manageurl->out() : '';
@@ -147,7 +154,7 @@ class repository_contentbank extends repository {
         $managerclass = "\\$contentbankfile->contenttype\\content";
         if ($plugin && $plugin->is_enabled() && class_exists($managerclass)) {
             $context = \context::instance_by_id($contextid);
-            $browser = \repository_contentbank\helper::get_contentbank_browser($context);
+            $browser = \repository_contentbank\helper::get_contentbank_browser($context, $contentbankfile->folderid);
             return $browser->can_access_content();
         }
 

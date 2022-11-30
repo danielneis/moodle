@@ -2984,7 +2984,7 @@ class global_navigation extends navigation_node {
      * @return bool True for successfull generation
      */
     public function add_front_page_course_essentials(navigation_node $coursenode, stdClass $course) {
-        global $CFG, $USER, $COURSE, $SITE;
+        global $CFG, $USER, $COURSE, $SITE, $DB;
         require_once($CFG->dirroot . '/course/lib.php');
 
         if ($coursenode == false || $coursenode->get('frontpageloaded', navigation_node::TYPE_CUSTOM)) {
@@ -3074,7 +3074,8 @@ class global_navigation extends navigation_node {
             }
 
             $params = ['contextid' => $context->id];
-            if (has_capability('moodle/contentbank:access', $context)) {
+            if (has_capability('moodle/contentbank:access', $context) ||
+                user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'editingteacher']))) {
                 $url = new moodle_url('/contentbank/index.php', $params);
                 $node = $coursenode->add(get_string('contentbank'), $url,
                     self::TYPE_CUSTOM, null, 'contentbank', new pix_icon('i/contentbank', ''));

@@ -19,6 +19,7 @@ namespace core_contentbank\output;
 use context_coursecat;
 use core_contentbank\content;
 use core_contentbank\contentbank;
+use core_customfield\output\field_data;
 use renderable;
 use templatable;
 use renderer_base;
@@ -58,6 +59,16 @@ class bankcontent implements renderable, templatable {
      */
     private $allowedcourses;
 
+    /*
+     * @var string    Path of the folder.
+     */
+    private $path = '/';
+
+    /**
+     * @var \core_contentbank\folder[]    Array of folders.
+     */
+    private $folders;
+
     /**
      * Construct this renderable.
      *
@@ -65,12 +76,24 @@ class bankcontent implements renderable, templatable {
      * @param array $toolbar List of content bank toolbar options.
      * @param \context|null $context Optional context to check (default null)
      * @param contentbank $cb Contenbank object.
+     * @param int $folderid   Current folder id.
+     * @param \core_contentbank\folder[] $folders   Array of folders.
      */
-    public function __construct(array $contents, array $toolbar, ?\context $context, contentbank $cb) {
+    public function __construct(array $contents, array $toolbar, ?\context $context, contentbank $cb,
+        int $folderid, array $folders) {
+
+        global $DB;
+
         $this->contents = $contents;
         $this->toolbar = $toolbar;
         $this->context = $context;
         list($this->allowedcategories, $this->allowedcourses) = $cb->get_contexts_with_capabilities_by_user();
+        if ($folderid) {
+            $this->path = $DB->get_field('contentbank_folders', 'path', ['id' => $folderid]);
+        }
+        $this->folders = $folders;
+        $this->folderid = $folderid;
+        $this->breadcrumbs = \core_contentbank\contentbank::make_breadcrumb($folderid, $this->context->id);
     }
 
     /**
@@ -86,7 +109,28 @@ class bankcontent implements renderable, templatable {
         $PAGE->requires->js_call_amd('core_contentbank/sort', 'init');
 
         $data = new stdClass();
-        $contentdata = array();
+
+        $rooturl = new \moodle_url('/contentbank/index.php', ['contextid' => $this->context->id]);
+        $data->root = $rooturl->out();
+
+        $data->breadcrumbs = $this->breadcrumbs;
+
+        $contentdata = [];
+        foreach ($this->folders as $folder) {
+            $link = new \moodle_url('/contentbank/index.php', ['contextid' => $this->context->id, 'folderid' => $folder->id]);
+            $contentdata[] = [
+                'name' => $folder->name,
+                'title' => strtolower($folder->name),
+                'link' => $link->out(false),
+                'icon' => \core_contentbank\folder::get_icon(),
+                'type' => get_string('folder'),
+                'size' => '-',
+                'author' => fullname(\core_user::get_user($folder->usercreated)),
+                'uses' => 0,
+            ];
+        }
+
+        $handler = \core_contentbank\customfield\content_handler::create();
         foreach ($this->contents as $content) {
             $file = $content->get_file();
             $filesize = $file ? $file->get_filesize() : 0;
@@ -99,7 +143,7 @@ class bankcontent implements renderable, templatable {
                 $name = $content->get_name();
             }
             $author = \core_user::get_user($content->get_content()->usercreated);
-            $contentdata[] = array(
+            $currentcontentdata = array(
                 'name' => $name,
                 'title' => strtolower($name),
                 'link' => $contenttype->get_view_url($content),
@@ -112,6 +156,12 @@ class bankcontent implements renderable, templatable {
                 'author' => fullname($author),
                 'visibilityunlisted' => $content->get_visibility() == content::VISIBILITY_UNLISTED
             );
+            $instancedata = $handler->get_instance_data($content->get_id());
+            foreach ($instancedata as $d) {
+                $fd = new field_data($d);
+                $currentcontentdata['customfield_' . $fd->get_shortname()] = $fd->get_value();
+            }
+            $contentdata[] = $currentcontentdata;
         }
         $data->viewlist = get_user_preferences('core_contentbank_view_list');
         $data->contents = $contentdata;

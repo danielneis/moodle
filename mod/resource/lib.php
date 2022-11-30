@@ -363,6 +363,7 @@ function resource_pluginfile($course, $cm, $context, $filearea, $args, $forcedow
     if ($context->contextlevel != CONTEXT_MODULE) {
         return false;
     }
+    $coursecontext = $context->get_course_context(false);
 
     require_course_login($course, true, $cm);
     if (!has_capability('mod/resource:view', $context)) {
@@ -427,6 +428,7 @@ function resource_pluginfile($course, $cm, $context, $filearea, $args, $forcedow
         if ($stored_file && !$stored_file->is_directory()) {
 
             $filename = $stored_file->get_filename();
+            $originalfilename = $filename;
             if ((strpos(strtolower($filename), '.odp') !== false) ||
                 (strpos(strtolower($filename), '.ppt') !== false) ||
                 (strpos(strtolower($filename), '.doc') !== false)) {
@@ -441,17 +443,21 @@ function resource_pluginfile($course, $cm, $context, $filearea, $args, $forcedow
 
             }
             if (strpos(strtolower($filename), '.pdf') !== false) {
-                require_once($CFG->dirroot . '/contentbank/contenttype/document/lib.php');
-                $pdf = contenttype_document_process_pdf($stored_file, \context::instance_by_id($contentbankfile->contextid), $contentbankfile->itemid);
-                \core\session\manager::write_close(); // Unlock session during file serving.
-                $filename = mb_ereg_replace("([^\w\s\d\-_~,;\[\]\(\).])", '', $filename);
-                $filename = mb_ereg_replace("([\.]{2,})", '', $filename);
-                $filename = strtr(
-                    utf8_decode($filename),
-                    utf8_decode('àáâãäçèéêëìíîïñòóôõöùúûüýÿÀÁÂÃÄÇÈÉÊËÌÍÎÏÑÒÓÔÕÖÙÚÛÜÝ'),
-                    'aaaaaceeeeiiiinooooouuuuyyAAAAACEEEEIIIINOOOOOUUUUY');
-                $pdf->Output('I', utf8_decode($filename));
-                exit;
+                try {
+                    require_once($CFG->dirroot . '/contentbank/contenttype/document/lib.php');
+                    $pdf = contenttype_document_process_pdf($stored_file, $coursecontext, $contentbankfile->itemid, $originalfilename);
+                    \core\session\manager::write_close(); // Unlock session during file serving.
+
+                    if ($forcedownload) {
+                        $pdf->Output('D', $filename, true);
+                    } else {
+                        $pdf->Output('I', $filename, true);
+                    }
+                    exit;
+
+                } catch (Exception $e) {
+                    send_stored_file($stored_file, 0, 0, true, $options); // must force download - security!
+                }
             }
 
         }

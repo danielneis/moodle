@@ -411,10 +411,13 @@ abstract class content {
     public function is_view_allowed(): bool {
         // Plugins can overwrite this method in case they want to check something related to content properties.
         global $USER, $DB;
-        if (user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'editingteacher']))) {
-            return true;
-        }
         $context = \context::instance_by_id($this->get_contextid());
+
+        $displaypreference = get_user_preferences('contentbank_displayunlisted', 1);
+
+        if (($this->get_visibility() == self::VISIBILITY_UNLISTED) && !$displaypreference) {
+            return false;
+        }
 
         return $USER->id == $this->content->usercreated ||
             $this->get_visibility() == self::VISIBILITY_PUBLIC ||

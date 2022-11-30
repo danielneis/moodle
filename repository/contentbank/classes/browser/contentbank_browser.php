@@ -169,9 +169,10 @@ abstract class contentbank_browser {
      * Generate nodes for the content bank content in the current context which can be accessed/viewed by the user.
      *
      * @return array[] The array containing the content nodes where each content node is an array with keys:
-     *                 shorttitle, title, datemodified, datecreated, author, license, isref, source, icon, thumbnail.
+     *                 customfield_code, shorttitle, title, datemodified, datecreated, author, license, isref, source, icon, thumbnail.
      */
     private function get_contentbank_content(): array {
+        global $DB;
         $cb = new \core_contentbank\contentbank();
         // Get all content bank files in the current context.
         $contents = $cb->search_contents(null, $this->context->id, null, $this->folderid);
@@ -180,6 +181,18 @@ abstract class contentbank_browser {
         return array_reduce($contents, function($list, $content) {
             if ((!is_callable([$content, 'is_temporary']) || !$content->is_temporary()) && $this->can_access_content() &&
                     $contentnode = \repository_contentbank\helper::create_contentbank_content_node($content)) {
+
+                global $DB;
+
+                $categoryid = $DB->get_field('customfield_category', 'id', ['component' => 'core_contentbank'], IGNORE_MULTIPLE);
+                $fieldid = $DB->get_field('customfield_field', 'id', ['shortname' => 'code', 'categoryid' => $categoryid]);
+
+                if ($code = $DB->get_field('customfield_data', 'charvalue', ['fieldid' => $fieldid, 'instanceid' => $content->get_id()])) {
+                    $contentnode['customfield_code'] = $code;
+                } else {
+                    $contentnode['customfield_code'] = '';
+                }
+
                 $list[] = $contentnode;
             }
             return $list;

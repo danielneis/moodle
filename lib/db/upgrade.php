@@ -3929,8 +3929,9 @@ privatefiles,moodle|/user/files.php';
         // Define a new temporary field in the question_bank_entries tables.
         // Creating temporary field questionid to populate the data in question version table.
         // This will make sure the appropriate question id is inserted the version table without making any complex joins.
+        /*
         $table = new xmldb_table('question_bank_entries');
-        $field = new xmldb_field('questionid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_TYPE_INTEGER);
+        $field = new xmldb_field('questionid', XMLDB_TYPE_INTEGER, '10', null, null);
         if (!$dbman->field_exists($table, $field)) {
             $dbman->add_field($table, $field);
         }
@@ -3949,12 +3950,14 @@ privatefiles,moodle|/user/files.php';
         $DB->execute($sql);
 
         $transaction->allow_commit();
+        */
 
         // Main savepoint reached.
         upgrade_main_savepoint(true, 2022020200.02);
     }
 
     if ($oldversion < 2022020200.03) {
+        /*
         $transaction = $DB->start_delegated_transaction();
         upgrade_set_timeout(3600);
         // Create the question_versions using that temporary field.
@@ -3976,6 +3979,7 @@ privatefiles,moodle|/user/files.php';
         $DB->execute($sql);
 
         $transaction->allow_commit();
+        */
 
         // Dropping temporary field questionid.
         $table = new xmldb_table('question_bank_entries');
@@ -3989,6 +3993,7 @@ privatefiles,moodle|/user/files.php';
     }
 
     if ($oldversion < 2022020200.04) {
+        /*
         $transaction = $DB->start_delegated_transaction();
         upgrade_set_timeout(3600);
         // Create the base data for the random questions in the set_references table.
@@ -4021,6 +4026,7 @@ privatefiles,moodle|/user/files.php';
         ]);
 
         $transaction->allow_commit();
+        */
 
         // Main savepoint reached.
         upgrade_main_savepoint(true, 2022020200.04);
@@ -4093,7 +4099,7 @@ privatefiles,moodle|/user/files.php';
                   WHERE q.qtype <> 'random'";
 
         // Inserting question_references data.
-        $DB->execute($sql);
+        //$DB->execute($sql);
 
         $transaction->allow_commit();
         // Main savepoint reached.
@@ -4560,7 +4566,47 @@ privatefiles,moodle|/user/files.php';
         }
 
         // Main savepoint reached.
-        upgrade_main_savepoint(true, 2022050300.00);
+        upgrade_main_savepoint(true, 2021051705.08);
+    }
+
+    if ($oldversion < 2022092000.00) {
+
+        if ($fields = $DB->get_records('customfield_field', ['type' => 'select'])) {
+            foreach ($fields as $f) {
+                $configdata = json_decode($f->configdata);
+                $options = preg_split("/\s*\n\s*/", trim($configdata->options));
+                if ($data = $DB->get_records('customfield_data', ['fieldid' => $f->id])) {
+                    foreach ($data as $d) {
+                        if (empty($d->charvalue)) {
+                            if (isset($options[$d->intvalue])) {
+                                $d->charvalue = $options[$d->intvalue];
+                                $DB->update_record('customfield_data', $d);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        upgrade_main_savepoint(true, 2022092000.00);
+    }
+
+    if ($oldversion < 2022041904.03) {
+
+        if ($fields = $DB->get_records('customfield_field', ['type' => 'select'])) {
+            foreach ($fields as $f) {
+                $configdata = json_decode($f->configdata);
+                $options = preg_split("/\s*\n\s*/", trim($configdata->options));
+                if ($data = $DB->get_records('customfield_data', ['fieldid' => $f->id])) {
+                    foreach ($data as $d) {
+                        if (empty($d->charvalue)) {
+                            $d->charvalue = $options[$d->intvalue];
+                            $DB->update_record('customfield_data', $d);
+                        }
+                    }
+                }
+            }
+        }
+        upgrade_main_savepoint(true, 2022041904.03);
     }
 
     if ($oldversion < 2022050300.01) {
@@ -4570,7 +4616,7 @@ privatefiles,moodle|/user/files.php';
         $field = new xmldb_field('parent', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0', 'contenttype');
 
         // Launch rename field parent.
-        $dbman->rename_field($table, $field, 'folderid');
+        //$dbman->rename_field($table, $field, 'folderid');
 
         // Main savepoint reached.
         upgrade_main_savepoint(true, 2022050300.01);

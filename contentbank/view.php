@@ -100,7 +100,7 @@ $actionmenu = new action_menu();
 $actionmenu->set_alignment(action_menu::TR, action_menu::BR);
 if ($contenttype->can_manage($content)) {
     if ($content->is_deleted()) {
-        // Add the restore content forever item to the menu.
+        // Add the restore content item to the menu.
         $attributes = [
                     'data-action' => 'restorecontent',
                     'data-contentname' => $content->get_name(),
@@ -117,34 +117,36 @@ if ($contenttype->can_manage($content)) {
         ));
     } else {
         // Add the visibility item to the menu.
-        switch($content->get_visibility()) {
-            case content::VISIBILITY_UNLISTED:
-                $visibilitylabel = get_string('visibilitysetpublic', 'core_contentbank');
-                $newvisibility = content::VISIBILITY_PUBLIC;
-                $visibilityicon = 't/hide';
-                break;
-            case content::VISIBILITY_PUBLIC:
-                $visibilitylabel = get_string('visibilitysetunlisted', 'core_contentbank');
-                $newvisibility = content::VISIBILITY_UNLISTED;
-                $visibilityicon = 't/show';
-                break;
-            default:
-                print_error('contentvisibilitynotfound', 'error', $returnurl, $content->get_visibility());
-                break;
-        }
+        if (has_capability('moodle/contentbank:viewunlistedcontent', $context)) {
+            switch($content->get_visibility()) {
+                case content::VISIBILITY_UNLISTED:
+                    $visibilitylabel = get_string('visibilitysetpublic', 'core_contentbank');
+                    $newvisibility = content::VISIBILITY_PUBLIC;
+                    $visibilityicon = 't/hide';
+                    break;
+                case content::VISIBILITY_PUBLIC:
+                    $visibilitylabel = get_string('visibilitysetunlisted', 'core_contentbank');
+                    $newvisibility = content::VISIBILITY_UNLISTED;
+                    $visibilityicon = 't/show';
+                    break;
+                default:
+                    print_error('contentvisibilitynotfound', 'error', $returnurl, $content->get_visibility());
+                    break;
+            }
 
-        $attributes = [
-            'data-action' => 'setcontentvisibility',
-            'data-visibility' => $newvisibility,
-            'data-contentid' => $content->get_id(),
-        ];
-        $actionmenu->add_secondary_action(new action_menu_link(
-            new moodle_url('#'),
-            new pix_icon($visibilityicon, $visibilitylabel),
-            $visibilitylabel,
-            false,
-            $attributes
-        ));
+            $attributes = [
+                'data-action' => 'setcontentvisibility',
+                'data-visibility' => $newvisibility,
+                'data-contentid' => $content->get_id(),
+            ];
+            $actionmenu->add_secondary_action(new action_menu_link(
+                new moodle_url('#'),
+                new pix_icon($visibilityicon, $visibilitylabel),
+                $visibilitylabel,
+                false,
+                $attributes
+            ));
+        }
 
         // Add the rename content item to the menu.
         $attributes = [
@@ -159,6 +161,42 @@ if ($contenttype->can_manage($content)) {
             false,
             $attributes
         ));
+
+        // Add the rename content item to the menu.
+        $attributes = [
+            'data-action' => 'copycontent',
+            'data-contentname' => get_string('copyof', 'contentbank', $record->name),
+            'data-contentid' => $content->get_id(),
+        ];
+        $actionmenu->add_secondary_action(new action_menu_link(
+            new moodle_url('#'),
+            new pix_icon('e/copy', get_string('copycontent', 'contentbank')),
+            get_string('copycontent', 'contentbank'),
+            false,
+            $attributes
+        ));
+
+        // Add the move content item to the menu.
+        $attributes = [
+            'data-action' => 'movecontent',
+            'data-contentname' => $record->name,
+            'data-contentid' => $content->get_id(),
+        ];
+        $actionmenu->add_secondary_action(new action_menu_link(
+            new moodle_url('#'),
+            new pix_icon('i/folder', get_string('changefolder', 'contentbank')),
+            get_string('changefolder', 'contentbank'),
+            false,
+            $attributes
+        ));
+        $PAGE->requires->js_call_amd(
+            'core_contentbank/move_content',
+            'initModal',
+            [
+                '[data-action="movecontent"]',
+                \core_contentbank\form\move_content::class,
+                $context->id, $record->folderid, $record->id
+            ]);
 
         if ($contenttype->can_upload()) {
             $actionmenu->add_secondary_action(new action_menu_link(

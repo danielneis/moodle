@@ -39,7 +39,7 @@ $folderid = optional_param('folderid', 0, PARAM_INT);
 
 $breadcrumb = \core_contentbank\contentbank::make_breadcrumb($folderid, $contextid);
 
-if ((!$breadcrumb[0]['name'] == 'Professores') &&
+if (isset($breadcrumb[0]) && (!$breadcrumb[0]['name'] == 'Professores') &&
      user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'editingteacher']))) {
     require_capability('moodle/contentbank:access', $context);
 }
@@ -80,7 +80,6 @@ if (has_capability('moodle/contentbank:createfolder', $context) ||
     if ($folderid) {
         $folderrecord = $DB->get_record('contentbank_folders', ['id' => $folderid, 'contextid' => $contextid]);
         $folder = new \core_contentbank\folder($folderrecord);
-
         $label = get_string('renamefolder', 'core_contentbank');
 
         $attributes = [
@@ -138,6 +137,33 @@ if (has_capability('moodle/contentbank:deleteanycontent', $context)) {
         new moodle_url('/contentbank/trash.php'),
         new pix_icon('i/trash', $trashlabel),
         $trashlabel,
+        false,
+        []
+    ));
+}
+
+if (has_capability('moodle/contentbank:viewunlistedcontent', $context)) {
+    $setdisplay = optional_param('displayunlisted', null, PARAM_INT);
+    if (is_null($setdisplay)) {
+        $display = get_user_preferences('contentbank_displayunlisted', 1);
+    } else {
+        set_user_preference('contentbank_displayunlisted', $setdisplay);
+        $display = $setdisplay;
+    }
+    $seturl = new moodle_url('/contentbank/index.php', ['contextid' => $contextid, 'search' => $search, 'folderid' => $folderid]);
+    if ($display) {
+        $displaylabel = get_string('dontdisplayunlisted', 'contentbank');
+        $seturl->param('displayunlisted', 0);
+        $icon = 't/show';
+    } else {
+        $displaylabel = get_string('displayunlisted', 'contentbank');
+        $seturl->param('displayunlisted', 1);
+        $icon = 't/hide';
+    }
+    $actionmenu->add_secondary_action(new action_menu_link(
+        new moodle_url($seturl),
+        new pix_icon($icon, $displaylabel),
+        $displaylabel,
         false,
         []
     ));

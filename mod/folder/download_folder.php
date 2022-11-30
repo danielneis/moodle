@@ -33,6 +33,8 @@ require_course_login($course, true, $cm);
 $context = context_module::instance($cm->id);
 require_capability('mod/folder:view', $context);
 
+$coursecontext = $context->get_course_context(false);
+
 $folder = $DB->get_record('folder', array('id' => $cm->instance), '*', MUST_EXIST);
 
 $downloadable = folder_archive_available($folder, $cm);
@@ -61,7 +63,49 @@ foreach ($files as $file) {
         continue;
     }
     $pathinzip = $file->get_filepath() . $file->get_filename();
-    $zipwriter->add_file_from_stored_file($pathinzip, $file);
+
+    $sql = "SELECT f.*
+              FROM {files} f
+              WHERE f.contenthash = ?
+                AND f.component = ?
+                AND f.filearea = ?
+                AND f.filename != ?
+              LIMIT 1";
+    $params = [$file->get_contenthash(), 'contentbank', 'public', '.'];
+    if ($contentbankfile = $DB->get_record_sql($sql, $params)) {
+        $stored_file = $fs->get_file($contentbankfile->contextid,
+            'contentbank', 'public', $contentbankfile->itemid, $contentbankfile->filepath, $contentbankfile->filename);
+        if ($stored_file && !$stored_file->is_directory()) {
+
+            $filename = $stored_file->get_filename();
+            $originalfilename = $filename;
+            if ((strpos(strtolower($filename), '.odp') !== false) ||
+                (strpos(strtolower($filename), '.ppt') !== false) ||
+                (strpos(strtolower($filename), '.doc') !== false)) {
+
+                $converter = new \core_files\converter();
+                $conversion = $converter->start_conversion($stored_file, 'pdf', true);
+                if (!$conversion || !$stored_file = $conversion->get_destfile()) {
+                    throw new moodle_exception('convertererror', 'contenttype_document');
+                }
+                $filenamearray = explode('.', $filename);
+                $filename = $filenamearray[0] . '.pdf';
+
+            }
+            if (strpos(strtolower($filename), '.pdf') !== false) {
+                try {
+                    require_once($CFG->dirroot . '/contentbank/contenttype/document/lib.php');
+                    $pdf = contenttype_document_process_pdf($stored_file, $coursecontext, $contentbankfile->itemid, $originalfilename);
+                    \core\session\manager::write_close(); // Unlock session during file serving.
+                    $zipwriter->add_file_from_string($file->get_filepath() . $filename, $pdf->Output('S', $filename, true));
+                } catch (Exception $e) {
+                    $zipwriter->add_file_from_stored_file($pathinzip, $file);
+                }
+            }
+        }
+    } else {
+        $zipwriter->add_file_from_stored_file($pathinzip, $file);
+    }
 }
 
 // Finish the archive.

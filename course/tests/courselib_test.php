@@ -5122,7 +5122,7 @@ class courselib_test extends advanced_testcase {
                 'shortname' => 'C1',
                 'customfield_checkboxfield' => 1,
                 'customfield_datefield' => strtotime('2001-02-01T12:00:00Z'),
-                'customfield_selectfield' => 1,
+                'customfield_selectfield' => 'Option 1',
                 'customfield_textfield' => 'fish',
             ],
             [
@@ -5134,19 +5134,19 @@ class courselib_test extends advanced_testcase {
                 'shortname' => 'C3',
                 'customfield_checkboxfield' => 0,
                 'customfield_datefield' => strtotime('2001-02-01T12:00:00Z'),
-                'customfield_selectfield' => 2,
+                'customfield_selectfield' => 'Option 2',
                 'customfield_textfield' => 'dog',
             ],
             [
                 'shortname' => 'C4',
                 'customfield_checkboxfield' => 1,
-                'customfield_selectfield' => 3,
+                'customfield_selectfield' => 'Option 3',
                 'customfield_textfield' => 'cat',
             ],
             [
                 'shortname' => 'C5',
                 'customfield_datefield' => strtotime('1980-08-06T13:00:00Z'),
-                'customfield_selectfield' => 2,
+                'customfield_selectfield' => 'Option 2',
                 'customfield_textfield' => 'fish',
             ],
         ];
@@ -5209,7 +5209,7 @@ class courselib_test extends advanced_testcase {
             'select Option 1' => [
                 'coursedata' => $coursedata,
                 'customfield' => 'selectfield',
-                'customfieldvalue' => 1,
+                'customfieldvalue' => 'Option 1',
                 'limit' => 10,
                 'offset' => 0,
                 'expectedcourses' => ['C1'],
@@ -5218,7 +5218,7 @@ class courselib_test extends advanced_testcase {
             'select Option 2' => [
                 'coursedata' => $coursedata,
                 'customfield' => 'selectfield',
-                'customfieldvalue' => 2,
+                'customfieldvalue' => 'Option 2',
                 'limit' => 10,
                 'offset' => 0,
                 'expectedcourses' => ['C3', 'C5'],

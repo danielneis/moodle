@@ -39,16 +39,17 @@ class helper {
      * Get the content bank repository browser for a certain context.
      *
      * @param \context $context The context
+     * @param int $fodlerid The folder
      * @return \repository_contentbank\browser\contentbank_browser|null The content bank repository browser
      */
-    public static function get_contentbank_browser(\context $context): ?contentbank_browser {
+    public static function get_contentbank_browser(\context $context, $folderid): ?contentbank_browser {
         switch ($context->contextlevel) {
             case CONTEXT_SYSTEM:
-                return new \repository_contentbank\browser\contentbank_browser_context_system($context);
+                return new \repository_contentbank\browser\contentbank_browser_context_system($context, $folderid);
             case CONTEXT_COURSECAT:
-                return new \repository_contentbank\browser\contentbank_browser_context_coursecat($context);
+                return new \repository_contentbank\browser\contentbank_browser_context_coursecat($context, $folderid);
             case CONTEXT_COURSE:
-                return new \repository_contentbank\browser\contentbank_browser_context_course($context);
+                return new \repository_contentbank\browser\contentbank_browser_context_course($context, $folderid);
         }
         return null;
     }
@@ -68,6 +69,25 @@ class helper {
             'datemodified' => '',
             'datecreated' => '',
             'path' => $path,
+            'thumbnail' => $OUTPUT->image_url(file_folder_icon(90))->out(false),
+            'children' => []
+        ];
+    }
+
+    /**
+     * Create the content bank folder node.
+     *
+     * @param string $folder The folder record
+     * @return array The contentbank folder node
+     */
+    public static function create_contentbank_folder_node(object $folder): array {
+        global $OUTPUT;
+
+        return [
+            'title' => $folder->name,
+            'datemodified' => $folder->timemodified,
+            'datecreated' => $folder->timecreated,
+            'path' => base64_encode(json_encode(['contextid' => $folder->contextid, 'folderid' => $folder->id])),
             'thumbnail' => $OUTPUT->image_url(file_folder_icon(90))->out(false),
             'children' => []
         ];
@@ -130,6 +150,21 @@ class helper {
         return [
             'path' => base64_encode(json_encode(['contextid' => $context->id])),
             'name' => $context->get_context_name(false)
+        ];
+    }
+
+    /**
+     * Generate a navigation folder node.
+     *
+     * @param \context $context The context
+     * @param string $name The name of the folder
+     * @param int $folderid The id of the folder
+     * @return array The navigation node
+     */
+    public static function create_navigation_folder_node(\context $context, string $name, int $folderid): array {
+        return [
+            'path' => base64_encode(json_encode(['contextid' => $context->id, 'folderid' => $folderid])),
+            'name' => $name
         ];
     }
 }

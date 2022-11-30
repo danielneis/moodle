@@ -213,6 +213,15 @@ abstract class content {
     }
 
     /**
+     * Returns the folderid of the content.
+     *
+     * @return int   The id of the content context.
+     */
+    public function get_folderid(): string {
+        return $this->content->folderid;
+    }
+
+    /**
      * Returns the content ID.
      *
      * @return int   The content ID.
@@ -283,6 +292,15 @@ abstract class content {
      */
     public function get_visibility(): int {
         return $this->content->visibility;
+    }
+
+    /**
+     * Return true if the content is deleted.
+     *
+     * @return boolean
+     */
+    public function is_deleted(): int {
+        return $this->content->deleted;
     }
 
     /**
@@ -392,8 +410,14 @@ abstract class content {
      */
     public function is_view_allowed(): bool {
         // Plugins can overwrite this method in case they want to check something related to content properties.
-        global $USER;
+        global $USER, $DB;
         $context = \context::instance_by_id($this->get_contextid());
+
+        $displaypreference = get_user_preferences('contentbank_displayunlisted', 1);
+
+        if (($this->get_visibility() == self::VISIBILITY_UNLISTED) && !$displaypreference) {
+            return false;
+        }
 
         return $USER->id == $this->content->usercreated ||
             $this->get_visibility() == self::VISIBILITY_PUBLIC ||

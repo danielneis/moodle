@@ -37,9 +37,11 @@ class contentbank_browser_context_coursecat extends contentbank_browser {
      * Constructor.
      *
      * @param \context_coursecat $context The current context
+     * @param int $folderid The current folder
      */
-    public function __construct(\context_coursecat $context) {
+    public function __construct(\context_coursecat $context, int $folderid) {
         $this->context = $context;
+        $this->folderid = $folderid;
     }
 
     /**
@@ -72,7 +74,7 @@ class contentbank_browser_context_coursecat extends contentbank_browser {
 
         $canaccesschildcontent = false;
         foreach ($this->get_child_contexts() as $childcontext) {
-            $browser = \repository_contentbank\helper::get_contentbank_browser($childcontext);
+            $browser = \repository_contentbank\helper::get_contentbank_browser($childcontext, $this->folderid);
             if ($canaccesschildcontent = $browser->can_access_content()) {
                 break;
             }

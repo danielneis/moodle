@@ -39,23 +39,37 @@ class contentbank_search {
      *
      * @param string $search The search string
      * @return array[] The array containing all content file nodes that match the search criteria. Each content node is
-     *                 an array with keys: shorttitle, title, datemodified, datecreated, author, license, isref, source,
+     *                 an array with keys: customfield_code, shorttitle, title, datemodified, datecreated, author, license, isref, source,
      *                 icon, thumbnail.
      */
     public static function get_search_contents(string $search): array {
         $contentbank = new \core_contentbank\contentbank();
         // Return all content bank content that matches the search criteria and can be viewed/accessed by the user.
-        $contents = $contentbank->search_contents($search);
-        return array_reduce($contents, function($list, $content) {
-            $contentcontext = \context::instance_by_id($content->get_content()->contextid);
-            $browser = \repository_contentbank\helper::get_contentbank_browser($contentcontext);
-            // If the user can access the content and content node can be created, add the node into the
-            // search results list.
-            if ($browser->can_access_content() &&
-                    $contentnode = \repository_contentbank\helper::create_contentbank_content_node($content)) {
-                $list[] = $contentnode;
-            }
-            return $list;
-        }, []);
+        if ($contents = $contentbank->search_contents($search)) {
+            return array_reduce($contents, function($list, $content) {
+                $contentcontext = \context::instance_by_id($content->get_content()->contextid);
+                $folderid = $content->get_content()->folderid;
+                $browser = \repository_contentbank\helper::get_contentbank_browser($contentcontext, $folderid);
+                // If the user can access the content and content node can be created, add the node into the
+                // search results list.
+                if ((!is_callable([$content, 'is_temporary']) || !$content->is_temporary()) && $browser->can_access_content() &&
+                        $contentnode = \repository_contentbank\helper::create_contentbank_content_node($content, $folderid)) {
+
+                    global $DB;
+
+                    $categoryid = $DB->get_field('customfield_category', 'id', ['component' => 'core_contentbank'], IGNORE_MULTIPLE);
+                    $fieldid = $DB->get_field('customfield_field', 'id', ['shortname' => 'code', 'categoryid' => $categoryid]);
+
+                    if ($code = $DB->get_field('customfield_data', 'charvalue', ['fieldid' => $fieldid, 'instanceid' => $content->get_id()])) {
+                        $contentnode['customfield_code'] = $code;
+                    } else {
+                        $contentnode['customfield_code'] = '';
+                    }
+                    $list[] = $contentnode;
+                }
+                return $list;
+            }, []);
+        }
+        return [];
     }
 }

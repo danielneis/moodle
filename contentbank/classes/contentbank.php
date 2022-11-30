@@ -153,6 +153,20 @@ class contentbank {
     }
 
     /**
+     * Returns the file name without extension.
+     *
+     * @param  string $filename The name of the file
+     * @return string The file without extension
+     */
+    public function remove_extension(string $filename) {
+        $dot = strrpos($filename, '.');
+        if ($dot === false) {
+            return $filename;
+        }
+        return substr($filename, 0, $dot);
+    }
+
+    /**
      * Get the first content bank plugin supports a file extension.
      *
      * @param string $extension Content file extension
@@ -177,9 +191,14 @@ class contentbank {
      * @param  string|null $search Optional string to search (for now it will search only into the name).
      * @param  int $contextid Optional contextid to search.
      * @param  array $contenttypenames Optional array with the list of content-type names to search.
+     * @param  int $folderid Optional folderid to search.
+     * @param  bool $subfolders In case folderid is provided, if it will search subfolders.
+     * @param  bool $deleted If search within deleted items or not deleted (default).
      * @return array The contents for the enabled contentbank-type plugins having $search as name and placed in $contextid.
      */
-    public function search_contents(?string $search = null, ?int $contextid = 0, ?array $contenttypenames = null): array {
+    public function search_contents(?string $search = null, ?int $contextid = 0,
+        ?array $contenttypenames = null, ?int $folderid = 0, ?bool $subfolders = false, ?bool $deleted = false): array {
+
         global $DB;
 
         $contents = [];
@@ -204,16 +223,89 @@ class contentbank {
         // Filter contents on this context (if defined).
         if (!empty($contextid)) {
             $params['contextid'] = $contextid;
-            $sql .= ' AND contextid = :contextid ';
+            $sql .= ' AND c.contextid = :contextid ';
+        }
+
+        if ($subfolders) {
+            $folderpath = $DB->get_field('contentbank_folders', 'path', ['id' => $folderid]);
+            $params['folderpath'] = $DB->sql_like_escape($folderpath) . '%';
+            $sql .= ' AND ' . $DB->sql_like('f.path', ':folderpath', false, false) ;
+        } else {
+            $params['folderid'] = $folderid;
+            $sql .= ' AND folderid = :folderid ';
         }
 
         // Search for contents having this string (if defined).
         if (!empty($search)) {
             $sql .= ' AND ' . $DB->sql_like('name', ':name', false, false);
             $params['name'] = '%' . $DB->sql_like_escape($search) . '%';
+
+            $fields = \core_contentbank\customfield\content_handler::create()->get_fields();
+            if (!$fields) {
+                $fields = array();
+            }
+            list($fieldsql1, $fieldparam1) = $DB->get_in_or_equal(array_keys($fields), SQL_PARAMS_NAMED, 'fld1', true, 0);
+
+            $sql .= ' OR EXISTS (SELECT 1
+                                   FROM {customfield_data} cfd
+                                  WHERE cfd.contextid = c.contextid
+                                    AND ' . $DB->sql_like('cfd.value', ':cfdvalue', false, false) .
+                                  ' AND cfd.fieldid ' . $fieldsql1 .
+                                  ' AND cfd.instanceid = c.id ' .
+                                '))';
+            $params['cfdvalue'] = '%' . $DB->sql_like_escape($search) . '%';
+
+            $params = array_merge($params, $fieldparam1);
+
+            list($fieldsql2, $param2) = $DB->get_in_or_equal(array_keys($fields), SQL_PARAMS_NAMED, 'fld2', true, 0);
+            $param2['selectfieldval'] = '%' . $search . '%';
+
+            $searchselect = "CONVERT(SUBSTRING_INDEX( 
+                                             SUBSTRING_INDEX(
+                                              SUBSTR(cf.configdata,
+                                                     LOCATE('options', cf.configdata) + 10,
+                                                     LOCATE('defaultvalue', cf.configdata) - LOCATE('options', cf.configdata) - 13),
+                                              '\\\\r\\\\n', cfd.intvalue ),
+                                            '\\\\r\\\\n', -1) USING 'latin1')";
+
+            $sql2 = "select c.*
+                       from {contentbank_content} c
+                      WHERE c.deleted = 0
+                        AND EXISTS(
+                                SELECT 1
+                                  FROM {customfield_field} cf
+                                  JOIN {customfield_data} cfd 
+                                    ON cfd.fieldid = cf.id
+                                 WHERE c.id = cfd.instanceid
+                                   AND c.contextid = cfd.contextid
+                                   AND cf.id {$fieldsql2}
+                                   AND " . $DB->sql_like($searchselect, ':selectfieldval', false, false) .
+                          ')';
+            $records2 = $DB->get_records_sql($sql2, $param2);
+
+            foreach ($records2 as $record) {
+                $content = $this->get_content_from_id($record->id);
+                if ($content->is_view_allowed()) {
+                    $contents[] = $content;
+                }
+            }
         }
 
-        $records = $DB->get_records_select('contentbank_content', $sql, $params, 'name ASC');
+        if ($deleted) {
+            $sql .= ' AND c.deleted = 1';
+        } else {
+            $sql .= ' AND c.deleted = 0';
+        }
+
+        $fullsql = "SELECT c.*
+                      FROM {contentbank_content} c
+                 LEFT JOIN {contentbank_folders} f
+                        ON f.id = c.folderid
+                     WHERE {$sql}
+                     ORDER BY name ASC";
+
+        $records = $DB->get_records_sql($fullsql, $params);
+
         foreach ($records as $record) {
             $content = $this->get_content_from_id($record->id);
             if ($content->is_view_allowed()) {
@@ -263,9 +355,10 @@ class contentbank {
      * @param \context $context Context where to upload the file and content.
      * @param int $userid Id of the user uploading the file.
      * @param stored_file $file The file to get information from
+     * @param int $folderid Id of the folder where to upload the file and content.
      * @return content
      */
-    public function create_content_from_file(\context $context, int $userid, stored_file $file): ?content {
+    public function create_content_from_file(\context $context, int $userid, stored_file $file, ?int $folderid = 0): ?content {
         global $USER;
         if (empty($userid)) {
             $userid = $USER->id;
@@ -276,8 +369,9 @@ class contentbank {
         $plugin = $this->get_extension_supporter($extension, $context);
         $classname = '\\contenttype_'.$plugin.'\\contenttype';
         $record = new \stdClass();
-        $record->name = $filename;
+        $record->name = $this->remove_extension($filename);
         $record->usercreated = $userid;
+        $record->folderid = $folderid;
         $contentype = new $classname($context);
         $content = $contentype->upload_content($file, $record);
         $event = \core\event\contentbank_content_uploaded::create_from_record($content->get_content());
@@ -383,5 +477,67 @@ class contentbank {
      */
     public function is_context_allowed(context $context): bool {
         return in_array($context->contextlevel, self::ALLOWED_CONTEXT_LEVELS);
+    }
+
+    /**
+     * Function to get all the folders in a folder.
+     *
+     * @param int $folderid  Folder where to look for folders.
+     * @param int $contextid Context where to look for folders.
+     * @return array
+     * @throws \dml_exception
+     */
+    public static function get_folders_in_folder(int $folderid, int $contextid): array {
+        global $DB;
+        return $DB->get_records('contentbank_folders', ['parent' => $folderid, 'contextid' => $contextid]);
+    }
+
+    /**
+     * Creates array of breadcrumb for folders.
+     *
+     * @param int $folderid Id of the folder to make breadcrumbs for
+     * @param int $contextid Id of the context
+     * @return array The array with folder path
+     */
+    public static function make_breadcrumb(int $folderid, int $contextid): array {
+        global $DB;
+
+        $breadcrumb = [];
+        if ($folderid) {
+            $params = ['contextid' => $contextid, 'id' => $folderid];
+            $path = $DB->get_field('contentbank_folders', 'path', $params);
+            $levels = explode('/', $path);
+            $url = new \moodle_url('/contentbank/index.php', $params);
+            foreach ($levels as $level) {
+                if ($level == '') {
+                    continue;
+                }
+                if ($name = $DB->get_field('contentbank_folders', 'name', ['id' => $level])) {
+                    $url->params(['folderid' => $level]);
+                    $breadcrumb[] = [
+                        'name' => $name,
+                        'link' => $url->out()
+                    ];
+                }
+            }
+        }
+        return $breadcrumb;
+    }
+
+    public static function get_folders_menu(int $folderid, int $contextid, array $folders, $parent): array {
+        global $DB;
+        if (empty($folders)) {
+            $folders = [0 => '/'];
+        }
+        $currentfolders = $DB->get_records_menu(
+            'contentbank_folders',
+            ['contextid' => $contextid, 'parent' => $folderid], 'id,name');
+        if (!empty($currentfolders)) {
+            foreach ($currentfolders as $folderid => $name) {
+                $folders[$folderid] = $parent . ' / ' . $name;
+                $folders = self::get_folders_menu($folderid, $contextid, $folders, $parent . ' / ' . $name);
+            }
+        }
+        return $folders;
     }
 }

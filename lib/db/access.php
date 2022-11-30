@@ -2516,6 +2516,16 @@ $capabilities = array(
         )
     ),
 
+    'moodle/contentbank:createfolder' => [
+        'riskbitmask' => RISK_SPAM,
+        'captype' => 'write',
+        'contextlevel' => CONTEXT_SYSTEM,
+        'archetypes' => [
+            'manager' => CAP_ALLOW,
+            'coursecreator' => CAP_ALLOW,
+        ]
+    ],
+
     // Delete any content from the content bank.
     'moodle/contentbank:deleteanycontent' => [
         'riskbitmask' => RISK_DATALOSS,
@@ -2579,6 +2589,22 @@ $capabilities = array(
             'coursecreator' => CAP_ALLOW,
             'editingteacher' => CAP_ALLOW,
         ]
+    ],
+
+    'moodle/contentbank:configurecustomfields' => [
+        'captype' => 'write',
+        'contextlevel' => CONTEXT_MODULE,
+        'archetypes' => [
+            'manager' => CAP_ALLOW,
+        ],
+    ],
+
+    'moodle/contentbank:changelockedcustomfields' => [
+        'captype' => 'write',
+        'contextlevel' => CONTEXT_MODULE,
+        'archetypes' => [
+            'manager' => CAP_ALLOW,
+        ],
     ],
 
     // Allow users to download course content.

@@ -53,10 +53,6 @@ $PAGE->set_pagetype('contentbank');
 
 $PAGE->navbar->add(get_string('trash', 'contentbank'), $url);
 
-// Create the cog menu with all the secondary actions, such as delete, rename...
-$actionmenu = new action_menu();
-$actionmenu->set_alignment(action_menu::TR, action_menu::BR);
-
 // Get all contents managed by active plugins where the user has permission to render them.
 $contenttypes = [];
 $enabledcontenttypes = $cb->get_enabled_content_types();
@@ -86,7 +82,7 @@ if ($errormsg !== '' && get_string_manager()->string_exists($errormsg, 'core_con
 }
 
 // Render the contentbank contents.
-$folder = new \core_contentbank\output\bankcontent($foldercontents, $toolbar, $context, 0, []);
+$folder = new \core_contentbank\output\bankcontent($foldercontents, $toolbar, $context, $cb, 0, []);
 echo $OUTPUT->render($folder);
 
 echo $OUTPUT->box_end();

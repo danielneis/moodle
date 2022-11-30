@@ -103,7 +103,7 @@ class bankcontent implements renderable, templatable {
      * @throws \moodle_exception
      */
     protected function get_edit_actions_dropdown(): ?array {
-        global $PAGE;
+        global $DB, $PAGE, $USER;
         $options = [];
         if (has_capability('moodle/contentbank:createfolder', $this->context) ||
             user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'editingteacher']))) {
@@ -144,7 +144,38 @@ class bankcontent implements renderable, templatable {
                         ['[data-action="deletefolder"]', $this->context->id, $this->folderid]
                     );
                 }
+                $foldersinpath = explode('/', $folderrecord->path);
+                $topfolder = $foldersinpath[1];
+                if ($DB->get_field('contentbank_folders', 'name', ['id' => $topfolder]) == 'Professores') {
+                    $systemctx = \context_system::instance();
+                    $cancreatefolder =
+                        user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'p_professor']), $systemctx->id) ||
+                        user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'p_materiais']), $systemctx->id) ||
+                        user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'p_administrador']), $systemctx->id) ||
+                        user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'p_colabobrador']), $systemctx->id) ||
+                        has_capability('moodle/contentbank:createfolder', $this->context);
+                } else {
+                    $cancreatefolder = has_capability('moodle/contentbank:createfolder', $this->context);
+                }
+            } else {
+                $cancreatefolder = has_capability('moodle/contentbank:createfolder', $this->context);
             }
+        } else {
+            $cancreatefolder  = has_capability('moodle/contentbank:createfolder', $this->context);
+        }
+        if ($cancreatefolder) {
+
+            $label = get_string('newfolder', 'core_contentbank');
+
+            $options[$label] = [
+                'data-action' => 'createfolder',
+                'data-contextid' => $this->context->id,
+                'data-parentid' => $this->folderid,
+            ];
+            $PAGE->requires->js_call_amd(
+                'core_contentbank/create_folder',
+                'initModal',
+                ['[data-action="createfolder"]', \core_contentbank\form\create_folder::class, $this->context->id, $this->folderid]);
         }
 
         if (has_capability('moodle/contentbank:deleteanycontent', $this->context)) {

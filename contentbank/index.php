@@ -67,6 +67,11 @@ foreach ($breadcrumb as $bc) {
     $PAGE->navbar->add($bc['name'], $bc['link']);
 }
 
+$setdisplay = optional_param('displayunlisted', null, PARAM_INT);
+if (!is_null($setdisplay)) {
+    set_user_preference('contentbank_displayunlisted', $setdisplay);
+}
+
 $PAGE->set_title($title);
 $PAGE->add_body_class('limitedwidth');
 $PAGE->set_pagetype('contentbank');

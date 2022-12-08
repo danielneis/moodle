@@ -115,6 +115,8 @@ class folder {
         global $DB;
         $parentid = $DB->get_field('contentbank_folders', 'parent', ['id' => $folderid, 'contextid' => $contextid]);
         $DB->delete_records('contentbank_folders', ['id' => $folderid, 'contextid' => $contextid]);
+        $sql = 'UPDATE {contentbank_content} SET folderid = 0 WHERE folderid = ?';
+        $DB->execute($sql, [$folderid]);
         return $parentid;
     }
 
@@ -196,7 +198,7 @@ class folder {
         if ($count->folderscount) {
             return false;
         }
-        return empty($DB->record_exists('contentbank_content', ['folderid' => $this->get_id()]));
+        return empty($DB->record_exists('contentbank_content', ['folderid' => $this->get_id(), 'deleted' => 0]));
     }
 
     /**

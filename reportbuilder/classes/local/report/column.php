@@ -118,12 +118,12 @@ final class column {
      *    ->add_callback([format::class, 'format_string']));
      *
      * @param string $name Internal name of the column
-     * @param lang_string|null $title Title of the column used in reports (null for blank)
+     * @param lang_string|string|null $title Title of the column used in reports (null for blank)
      * @param string $entityname Name of the entity this column belongs to. Typically when creating columns within entities
      *      this value should be the result of calling {@see get_entity_name}, however if creating columns inside reports directly
      *      it should be the name of the entity as passed to {@see \core_reportbuilder\local\report\base::annotate_entity}
      */
-    public function __construct(string $name, ?lang_string $title, string $entityname) {
+    public function __construct(string $name, $title = null, string $entityname) {
         $this->columnname = $name;
         $this->columntitle = $title;
         $this->entityname = $entityname;

@@ -226,18 +226,20 @@ class contentbank {
             $sql .= ' AND c.contextid = :contextid ';
         }
 
-        if ($subfolders) {
-            $folderpath = $DB->get_field('contentbank_folders', 'path', ['id' => $folderid]);
-            $params['folderpath'] = $DB->sql_like_escape($folderpath) . '%';
-            $sql .= ' AND ' . $DB->sql_like('f.path', ':folderpath', false, false) ;
-        } else {
-            $params['folderid'] = $folderid;
-            $sql .= ' AND folderid = :folderid ';
+        if (!$deleted) {
+            if ($subfolders) {
+                $folderpath = $DB->get_field('contentbank_folders', 'path', ['id' => $folderid]);
+                $params['folderpath'] = $DB->sql_like_escape($folderpath) . '%';
+                $sql .= ' AND ' . $DB->sql_like('f.path', ':folderpath', false, false) ;
+            } else {
+                $params['folderid'] = $folderid;
+                $sql .= ' AND folderid = :folderid ';
+            }
         }
 
         // Search for contents having this string (if defined).
         if (!empty($search)) {
-            $sql .= ' AND ' . $DB->sql_like('name', ':name', false, false);
+            $sql .= ' AND (' . $DB->sql_like('c.name', ':name', false, false);
             $params['name'] = '%' . $DB->sql_like_escape($search) . '%';
 
             $fields = \core_contentbank\customfield\content_handler::create()->get_fields();

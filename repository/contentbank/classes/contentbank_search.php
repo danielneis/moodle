@@ -45,7 +45,7 @@ class contentbank_search {
     public static function get_search_contents(string $search): array {
         $contentbank = new \core_contentbank\contentbank();
         // Return all content bank content that matches the search criteria and can be viewed/accessed by the user.
-        if ($contents = $contentbank->search_contents($search)) {
+        if ($contents = $contentbank->search_contents($search, 0, null, 0, true)) {
             return array_reduce($contents, function($list, $content) {
                 $contentcontext = \context::instance_by_id($content->get_content()->contextid);
                 $folderid = $content->get_content()->folderid;

@@ -320,8 +320,7 @@ function folder_pluginfile($course, $cm, $context, $filearea, $args, $forcedownl
             }
             if (strpos(strtolower($filename), '.pdf') !== false) {
                 try {
-                    require_once($CFG->dirroot . '/contentbank/contenttype/document/lib.php');
-                    $pdf = contenttype_document_process_pdf($stored_file, $coursecontext, $contentbankfile->itemid, $originalfilename);
+                    $pdf = \contenttype_document\contenttype::process_pdf($stored_file, $coursecontext, $contentbankfile->itemid, $originalfilename);
                     \core\session\manager::write_close(); // Unlock session during file serving.
 
                     if ($forcedownload) {

@@ -98,14 +98,24 @@ class primary implements renderable, templatable {
      * @return array
      */
     protected function get_custom_menu(renderer_base $output): array {
-        global $CFG;
+        global $CFG, $USER, $DB;
 
-        // Early return if a custom menu does not exists.
-        if (empty($CFG->custommenuitems)) {
+        $addcontentbank =
+            user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'p_administrador'])) ||
+            user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'p_colaborador'])) ||
+            user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'p_materiais'])) ||
+            user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'p_professor']));
+
+        if (empty($CFG->custommenuitems) && !$addcontentbank) {
+            // Early return if a custom menu does not exists.
             return [];
         }
 
         $custommenuitems = $CFG->custommenuitems;
+        if ($addcontentbank) {
+            $custommenuitems .= "\r" . get_string('contentbank') . '|/contentbank';
+        }
+
         $currentlang = current_language();
         $custommenunodes = custom_menu::convert_text_to_menu_nodes($custommenuitems, $currentlang);
         $nodes = [];

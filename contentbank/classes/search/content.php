@@ -141,14 +141,19 @@ class content extends \core_search\base {
      * @return int
      */
     public function check_access($id) {
-        global $DB;
+        global $DB, $USER;
         if (!$record = $DB->get_record('contentbank_content', ['id' => $id])) {
             return \core_search\manager::ACCESS_DELETED;
         }
-        $managerclass = "\\{$record->contenttype}\\content";
-        $content = new $managerclass($record);
 
-        if ($content->is_view_allowed()) {
+        $systemctx = \context_system::instance();
+        $canaccess =
+            user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'p_professor']), $systemctx->id) ||
+            user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'p_materiais']), $systemctx->id) ||
+            user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'p_administrador']), $systemctx->id) ||
+            user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'p_colaborador']), $systemctx->id) ||
+            is_siteadmin();
+        if ($canaccess) {
             return \core_search\manager::ACCESS_GRANTED;
         }
         return \core_search\manager::ACCESS_DENIED;

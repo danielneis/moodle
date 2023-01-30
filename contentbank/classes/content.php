@@ -418,9 +418,8 @@ abstract class content {
         if (($this->get_visibility() == self::VISIBILITY_UNLISTED) && !$displaypreference) {
             return false;
         }
-
-        return $USER->id == $this->content->usercreated ||
-            $this->get_visibility() == self::VISIBILITY_PUBLIC ||
+        return ($USER->id == $this->content->usercreated) ||
+            ($this->get_visibility() == self::VISIBILITY_PUBLIC) ||
             has_capability('moodle/contentbank:viewunlistedcontent', $context);
     }
 }

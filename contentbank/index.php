@@ -39,8 +39,8 @@ $folderid = optional_param('folderid', 0, PARAM_INT);
 
 $breadcrumb = \core_contentbank\contentbank::make_breadcrumb($folderid, $contextid);
 
-if (isset($breadcrumb[0]) && (!$breadcrumb[0]['name'] == 'Professores') &&
-     user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'editingteacher']))) {
+if (!isset($breadcrumb[0]) || (!$breadcrumb[0]['name'] == 'Professores') ||
+     !user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'editingteacher']))) {
     require_capability('moodle/contentbank:access', $context);
 }
 
@@ -112,20 +112,14 @@ if (has_capability('moodle/contentbank:useeditor', $context)) {
     }
 }
 
-if (isset($folderrecord)) {
-    $foldersinpath = explode('/', $folderrecord->path);
-    $topfolder = $foldersinpath[1];
-    if ($DB->get_field('contentbank_folders', 'name', ['id' => $topfolder]) == 'Professores') {
-        $systemctx = \context_system::instance();
-        $canupload =
-            user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'p_professor']), $systemctx->id) ||
-            user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'p_materiais']), $systemctx->id) ||
-            user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'p_administrador']), $systemctx->id) ||
-            user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'p_colabobrador']), $systemctx->id) ||
-            has_capability('moodle/contentbank:upload', $context);
-    } else {
-        $canupload = has_capability('moodle/contentbank:upload', $context);
-    }
+if (isset($breadcrumb[0]) && ($breadcrumb[0]['name'] === 'Professores')) {
+    $systemctx = \context_system::instance();
+    $canupload =
+        user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'p_professor']), $systemctx->id) ||
+        user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'p_materiais']), $systemctx->id) ||
+        user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'p_administrador']), $systemctx->id) ||
+        user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'p_colaborador']), $systemctx->id) ||
+        has_capability('moodle/contentbank:upload', $context);
 } else {
     $canupload = has_capability('moodle/contentbank:upload', $context);
 }

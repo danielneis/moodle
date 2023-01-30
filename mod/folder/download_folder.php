@@ -77,27 +77,26 @@ foreach ($files as $file) {
             'contentbank', 'public', $contentbankfile->itemid, $contentbankfile->filepath, $contentbankfile->filename);
         if ($stored_file && !$stored_file->is_directory()) {
 
-            $filename = $stored_file->get_filename();
-            $originalfilename = $filename;
-            if ((strpos(strtolower($filename), '.odp') !== false) ||
-                (strpos(strtolower($filename), '.ppt') !== false) ||
-                (strpos(strtolower($filename), '.doc') !== false)) {
+            $sffilename = $stored_file->get_filename();
+            $originalfilename = $sffilename;
+            if ((strpos(strtolower($sffilename), '.odp') !== false) ||
+                (strpos(strtolower($sffilename), '.ppt') !== false) ||
+                (strpos(strtolower($sffilename), '.doc') !== false)) {
 
                 $converter = new \core_files\converter();
                 $conversion = $converter->start_conversion($stored_file, 'pdf', true);
                 if (!$conversion || !$stored_file = $conversion->get_destfile()) {
                     throw new moodle_exception('convertererror', 'contenttype_document');
                 }
-                $filenamearray = explode('.', $filename);
-                $filename = $filenamearray[0] . '.pdf';
+                $filenamearray = explode('.', $sffilename);
+                $sffilename = $filenamearray[0] . '.pdf';
 
             }
-            if (strpos(strtolower($filename), '.pdf') !== false) {
+            if (strpos(strtolower($sffilename), '.pdf') !== false) {
                 try {
-                    require_once($CFG->dirroot . '/contentbank/contenttype/document/lib.php');
-                    $pdf = contenttype_document_process_pdf($stored_file, $coursecontext, $contentbankfile->itemid, $originalfilename);
-                    \core\session\manager::write_close(); // Unlock session during file serving.
-                    $zipwriter->add_file_from_string($file->get_filepath() . $filename, $pdf->Output('S', $filename, true));
+                    $pdf = \contenttype_document\contenttype::process_pdf($stored_file, $coursecontext, $contentbankfile->itemid, $originalfilename);
+                    $pdfstr = $pdf->Output('S');
+                    $zipwriter->add_file_from_string($pathinzip, $pdfstr);
                 } catch (Exception $e) {
                     $zipwriter->add_file_from_stored_file($pathinzip, $file);
                 }

@@ -152,7 +152,7 @@ class bankcontent implements renderable, templatable {
                         user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'p_professor']), $systemctx->id) ||
                         user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'p_materiais']), $systemctx->id) ||
                         user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'p_administrador']), $systemctx->id) ||
-                        user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'p_colabobrador']), $systemctx->id) ||
+                        user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'p_colaborador']), $systemctx->id) ||
                         has_capability('moodle/contentbank:createfolder', $this->context);
                 } else {
                     $cancreatefolder = has_capability('moodle/contentbank:createfolder', $this->context);
@@ -380,6 +380,7 @@ class bankcontent implements renderable, templatable {
                 $addcontenttype->name = $type;
                 // Content type editor base URL.
                 $tool['link']->param('plugin', $type);
+                $tool['link']->param('folderid', $this->folderid);
                 $addcontenttype->baseurl = $tool['link']->out();
                 // Different types of the content type.
                 $addcontenttype->types = $types;

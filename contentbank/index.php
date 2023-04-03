@@ -76,7 +76,7 @@ if (isset($folderrecord)) {
             user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'p_professor']), $systemctx->id) ||
             user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'p_materiais']), $systemctx->id) ||
             user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'p_administrador']), $systemctx->id) ||
-            user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'p_colabobrador']), $systemctx->id) ||
+            user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'p_colaborador']), $systemctx->id) ||
             has_capability('moodle/contentbank:createfolder', $context);
     } else {
         $cancreatefolder = has_capability('moodle/contentbank:createfolder', $context);
@@ -251,7 +251,7 @@ if (isset($folderrecord)) {
             user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'p_professor']), $systemctx->id) ||
             user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'p_materiais']), $systemctx->id) ||
             user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'p_administrador']), $systemctx->id) ||
-            user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'p_colabobrador']), $systemctx->id) ||
+            user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'p_colaborador']), $systemctx->id) ||
             has_capability('moodle/contentbank:upload', $context);
     } else {
         $canupload = has_capability('moodle/contentbank:upload', $context);

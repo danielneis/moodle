@@ -2771,7 +2771,7 @@ function xmldb_main_upgrade($oldversion) {
         upgrade_main_savepoint(true, 2022092000.00);
     }
 
-    if ($oldversion < 2022041904.03) {
+    if ($oldversion < 2022092900.00) {
 
         if ($fields = $DB->get_records('customfield_field', ['type' => 'select'])) {
             foreach ($fields as $f) {
@@ -2779,15 +2779,13 @@ function xmldb_main_upgrade($oldversion) {
                 $options = preg_split("/\s*\n\s*/", trim($configdata->options));
                 if ($data = $DB->get_records('customfield_data', ['fieldid' => $f->id])) {
                     foreach ($data as $d) {
-                        if (empty($d->charvalue)) {
-                            $d->charvalue = $options[$d->intvalue];
+                            $d->charvalue = $options[$d->intvalue - 1];
                             $DB->update_record('customfield_data', $d);
-                        }
                     }
                 }
             }
         }
-        upgrade_main_savepoint(true, 2022041904.03);
+        upgrade_main_savepoint(true, 2022092900.00);
     }
 
     return true;

@@ -405,7 +405,7 @@ abstract class contenttype {
                     user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'p_professor']), $systemctx->id) ||
                     user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'p_materiais']), $systemctx->id) ||
                     user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'p_administrador']), $systemctx->id) ||
-                    user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'p_colabobrador']), $systemctx->id);
+                    user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'p_colaborador']), $systemctx->id);
                 if ($canupload) {
                     return true;
                 }
@@ -416,7 +416,7 @@ abstract class contenttype {
                     user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'p_professor']), $systemctx->id) ||
                     user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'p_materiais']), $systemctx->id) ||
                     user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'p_administrador']), $systemctx->id) ||
-                    user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'p_colabobrador']), $systemctx->id);
+                    user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'p_colaborador']), $systemctx->id);
                 if ($canupload) {
                     return true;
                 }
@@ -468,7 +468,7 @@ abstract class contenttype {
                         user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'p_professor']), $systemctx->id) ||
                         user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'p_materiais']), $systemctx->id) ||
                         user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'p_administrador']), $systemctx->id) ||
-                        user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'p_colabobrador']), $systemctx->id) ||
+                        user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'p_colaborador']), $systemctx->id) ||
                         has_capability('moodle/contentbank:deleteanycontent', $this->context);
                 }
             }
@@ -519,7 +519,7 @@ abstract class contenttype {
                         user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'p_professor']), $systemctx->id) ||
                         user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'p_materiais']), $systemctx->id) ||
                         user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'p_administrador']), $systemctx->id) ||
-                        user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'p_colabobrador']), $systemctx->id) ||
+                        user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'p_colaborador']), $systemctx->id) ||
                         has_capability('moodle/contentbank:manageanycontent', $this->context);
                 }
             }

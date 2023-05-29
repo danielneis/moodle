@@ -223,7 +223,11 @@ class custom_fields {
                         // In course settings this menu has an empty option and we need to respect that.
                         array_unshift($options, " ");
                         unset($options[0]);
-                        return $options;
+                        $optionsbybalue = [];
+                        foreach ($options as $o) {
+                            $optionsbyvalue[$o] = $o;
+                        }
+                        return $optionsbyvalue;
                     });
                 }
 

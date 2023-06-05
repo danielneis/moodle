@@ -104,13 +104,21 @@ class copy_content extends external_api {
                     $crecord->name = $params['name'];
 
                     if ($content = $contenttype->create_content($crecord)) {
+
+                        $handler = \core_contentbank\customfield\content_handler::create();
+                        $handler->instance_form_before_set_data($record);
+                        $record->id = $content->get_id();
+                        $handler->instance_form_save($record);
+
                         $fs = get_file_storage();
-                        $files = $fs->get_area_files($context->id, 'contentbank', 'public', $params['contentid'], 'itemid, filepath,
-                            filename', false);
+                        $files = $fs->get_area_files($context->id,
+                            'contentbank', 'public', $params['contentid'], 'itemid, filepath, filename', false);
+
                         if (!empty($files)) {
                             $file = reset($files);
                             $content->import_file($file);
                         }
+
                         $id = $content->get_id();
                     } else {
                         $warnings[] = [

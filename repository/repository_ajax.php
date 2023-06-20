@@ -234,9 +234,10 @@ switch ($action) {
 
             if ($usefilereference || $usecontrolledlink) {
                 if ($repo->has_moodle_files()) {
-                    $sourcefile = repository::get_moodle_file($reference);
-                    $record->contenthash = $sourcefile->get_contenthash();
-                    $record->filesize = $sourcefile->get_filesize();
+                    if ($sourcefile = repository::get_moodle_file($reference)) {
+                        $record->contenthash = $sourcefile->get_contenthash();
+                        $record->filesize = $sourcefile->get_filesize();
+                    }
                 }
 
                 // Check if file exists.

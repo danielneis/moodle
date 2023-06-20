@@ -101,40 +101,68 @@ class helper {
      */
     public static function create_contentbank_content_node(\core_contentbank\content $content): ?array {
         global $OUTPUT;
-        // Only content files are currently supported, but should be able to create content folder nodes in the future.
-        // Early return if the content is not a stored file.
-        if (!$file = $content->get_file()) {
-            return null;
-        }
-
-        $params = [
-            'contextid' => $file->get_contextid(),
-            'component' => $file->get_component(),
-            'filearea'  => $file->get_filearea(),
-            'itemid'    => $file->get_itemid(),
-            'filepath'  => $file->get_filepath(),
-            'filename'  => $file->get_filename()
-        ];
 
         $contenttype = $content->get_content_type_instance();
-        $encodedpath = base64_encode(json_encode($params));
 
-        $node = [
-            'shorttitle' => $content->get_name(),
-            'title' => $file->get_filename(),
-            'datemodified' => $file->get_timemodified(),
-            'datecreated' => $file->get_timecreated(),
-            'author' => $file->get_author(),
-            'license' => $file->get_license(),
-            'isref' => $file->is_external_file(),
-            'size' => $file->get_filesize(),
-            'source' => $encodedpath,
-            'icon' => $contenttype->get_icon($content),
-            'thumbnail' => $contenttype->get_icon($content)
-        ];
+        // Only content files are currently supported, but should be able to create content folder nodes in the future.
+        if (!$file = $content->get_file()) {
+            if ($externalurl = $content->get_external_url()) {
+                $params = [
+                    'contextid' => $content->get_contextid(),
+                    'component' => 'contentbank',
+                    'filearea'  => 'public',
+                    'itemid'    => $content->get_id(),
+                    'filepath'  => '/',
+                    'filename'  => $content->get_name(),
+                ];
 
-        if ($file->get_status() == 666) {
-            $node['originalmissing'] = true;
+                $encodedpath = base64_encode(json_encode($params));
+
+                $node = [
+                    'shorttitle' => $content->get_name(),
+                    'title' => $content->get_name(),
+                    'datemodified' => $content->get_timemodified(),
+                    'datecreated' => $content->get_timecreated(),
+                    'author' => '',
+                    'license' => '',
+                    'isref' => '',
+                    'size' => '',
+                    'source' => $encodedpath,
+                    'icon' => 'unknown',
+                    'thumbnail' => $OUTPUT->image_url('f/unknown-64')->out(false)
+                ];
+            } else {
+                return null;
+            }
+        } else {
+            $params = [
+                'contextid' => $file->get_contextid(),
+                'component' => $file->get_component(),
+                'filearea'  => $file->get_filearea(),
+                'itemid'    => $file->get_itemid(),
+                'filepath'  => $file->get_filepath(),
+                'filename'  => $file->get_filename()
+            ];
+
+            $encodedpath = base64_encode(json_encode($params));
+
+            $node = [
+                'shorttitle' => $content->get_name(),
+                'title' => $file->get_filename(),
+                'datemodified' => $file->get_timemodified(),
+                'datecreated' => $file->get_timecreated(),
+                'author' => $file->get_author(),
+                'license' => $file->get_license(),
+                'isref' => $file->is_external_file(),
+                'size' => $file->get_filesize(),
+                'source' => $encodedpath,
+                'icon' => $contenttype->get_icon($content),
+                'thumbnail' => $contenttype->get_icon($content)
+            ];
+
+            if ($file->get_status() == 666) {
+                $node['originalmissing'] = true;
+            }
         }
 
         return $node;

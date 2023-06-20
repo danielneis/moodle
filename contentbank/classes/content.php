@@ -118,6 +118,15 @@ abstract class content {
     }
 
     /**
+     * Returns $this->content->timecreated.
+     *
+     * @return int  $this->content->timecreated.
+     */
+    public function get_timecreated(): int {
+        return $this->content->timecreated;
+    }
+
+    /**
      * Updates content_bank table with information in $this->content.
      *
      * @return boolean  True if the content has been succesfully updated. False otherwise.
@@ -389,6 +398,9 @@ abstract class content {
      */
     public function get_file_url(): string {
         if (!$file = $this->get_file()) {
+            if ($externalurl = $this->get_external_url()) {
+                return $externalurl;
+            }
             return '';
         }
         $fileurl = moodle_url::make_pluginfile_url(
@@ -421,5 +433,9 @@ abstract class content {
         return ($USER->id == $this->content->usercreated) ||
             ($this->get_visibility() == self::VISIBILITY_PUBLIC) ||
             has_capability('moodle/contentbank:viewunlistedcontent', $context);
+    }
+
+    public function get_external_url() {
+        return $this->content->externalurl;
     }
 }

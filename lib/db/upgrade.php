@@ -3192,6 +3192,27 @@ privatefiles,moodle|/user/files.php';
         upgrade_main_savepoint(true, 2022112803.03);
     }
 
+    if ($oldversion < 2022112804.03) {
+
+        // Define field externalurl to be added to contentbank_content.
+        $table = new xmldb_table('contentbank_content');
+        $field = new xmldb_field('externalurl', XMLDB_TYPE_CHAR, '255', null, null, null, null, 'deleted');
+
+        // Conditionally launch add field externalurl.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        $index = new xmldb_index('externalurl', XMLDB_INDEX_NOTUNIQUE, ['externalurl']);
+
+        // Conditionally launch add index externalurl.
+        if (!$dbman->index_exists($table, $index)) {
+            $dbman->add_index($table, $index);
+        }
+
+        // Main savepoint reached.
+        upgrade_main_savepoint(true, 2022112804.03);
+    }
 
     return true;
 }

@@ -106,14 +106,21 @@ class primary implements renderable, templatable {
             user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'p_materiais'])) ||
             user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'p_professor']));
 
-        if (empty($CFG->custommenuitems) && !$addcontentbank) {
+        $addmanagecourses = 
+            user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'p_materiais']));
+
+        if (empty($CFG->custommenuitems) && !$addcontentbank && !$addmanagecourses) {
             // Early return if a custom menu does not exists.
             return [];
         }
 
         $custommenuitems = $CFG->custommenuitems;
         if ($addcontentbank) {
-            $custommenuitems .= "\r" . get_string('contentbank') . '|/contentbank';
+            $custommenuitems .= "\n" . get_string('contentbank') . '|/contentbank';
+        }
+
+        if ($addmanagecourses) {
+            $custommenuitems .= "\n" . get_string('managecourses') . '|/course/management.php?categoryid=0';
         }
 
         $currentlang = current_language();

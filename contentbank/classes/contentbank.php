@@ -24,6 +24,7 @@
 
 namespace core_contentbank;
 
+use core_contentbank\folder;
 use core_plugin_manager;
 use stored_file;
 use context;
@@ -491,7 +492,15 @@ class contentbank {
      */
     public static function get_folders_in_folder(int $folderid, int $contextid): array {
         global $DB;
-        return $DB->get_records('contentbank_folders', ['parent' => $folderid, 'contextid' => $contextid]);
+        $folders = $DB->get_records('contentbank_folders', ['parent' => $folderid, 'contextid' => $contextid]);
+        $finalfolders = [];
+        foreach ($folders as $f) {
+            $folder = new folder($f);
+            if ($folder->is_view_allowed()) {
+                $finalfolders[] = $f;
+            }
+        }
+        return $finalfolders;
     }
 
     /**

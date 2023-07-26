@@ -153,7 +153,23 @@ if ($errormsg !== '' && get_string_manager()->string_exists($errormsg, 'core_con
     $errormsg = get_string($errormsg, 'core_contentbank');
     echo $OUTPUT->notification($errormsg);
 } else if ($statusmsg !== '' && get_string_manager()->string_exists($statusmsg, 'core_contentbank')) {
-    $statusmsg = get_string($statusmsg, 'core_contentbank');
+    if ($statusmsg == 'foldervisibilitychanged') {
+        $foldervisibility = $DB->get_field('contentbank_folders', 'visibility', ['id' => $folderid, 'contextid' => $context->id]);
+        switch ($foldervisibility) {
+            case \core_contentbank\folder::VISIBILITY_PUBLIC:
+                $visibilitymsg = get_string('public', 'core_contentbank');
+                break;
+            case \core_contentbank\folder::VISIBILITY_UNLISTED:
+                $visibilitymsg = get_string('unlisted', 'core_contentbank');
+                break;
+            default:
+                throw new \moodle_exception('contentvisibilitynotfound', 'error', $returnurl, $foldervisibility);
+                break;
+        }
+        $statusmsg = get_string($statusmsg, 'core_contentbank', $visibilitymsg);
+    } else {
+        $statusmsg = get_string($statusmsg, 'core_contentbank');
+    }
     echo $OUTPUT->notification($statusmsg, 'notifysuccess');
 }
 

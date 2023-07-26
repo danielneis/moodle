@@ -108,6 +108,32 @@ class bankcontent implements renderable, templatable {
         if (has_capability('moodle/contentbank:createfolder', $this->context) ||
             user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'editingteacher']))) {
             if ($this->folderid) {
+                // Add the visibility item to the menu.
+                if (has_capability('moodle/contentbank:viewunlistedcontent', $this->context)) {
+                    switch($this->get_visibility()) {
+                        case content::VISIBILITY_UNLISTED:
+                            $visibilitylabel = get_string('visibilitysetpublic', 'core_contentbank');
+                            $newvisibility = content::VISIBILITY_PUBLIC;
+                            break;
+                        case content::VISIBILITY_PUBLIC:
+                            $visibilitylabel = get_string('visibilitysetunlisted', 'core_contentbank');
+                            $newvisibility = content::VISIBILITY_UNLISTED;
+                            break;
+                        default:
+                            $url = new \moodle_url('/contentbank/index.php', ['contextid' => $this->context->id]);
+                            throw new moodle_exception('contentvisibilitynotfound', 'error', $url, $this->get_visibility());
+                    }
+
+                    if ($visibilitylabel) {
+                        $options[$visibilitylabel] = [
+                            'data-action' => 'setfoldervisibility',
+                            'data-visibility' => $newvisibility,
+                            'data-folderid' => $this->folderid,
+                            'data-contextid' => $this->context->id,
+                        ];
+                    }
+                    $PAGE->requires->js_call_amd('core_contentbank/set_folder_visibility', 'init');
+                }
                 $folderrecord = $DB->get_record('contentbank_folders', ['id' => $this->folderid, 'contextid' => $this->context->id]);
                 $folder = new \core_contentbank\folder($folderrecord);
                 $label = get_string('renamefolder', 'core_contentbank');
@@ -127,7 +153,6 @@ class bankcontent implements renderable, templatable {
                         $this->context->id, $folderrecord->parent, $this->folderid, $folderrecord->name
                     ]
                 );
-
 
                 if ($folder->is_empty()) {
                     $label = get_string('deletefolder', 'core_contentbank');
@@ -389,5 +414,13 @@ class bankcontent implements renderable, templatable {
         }
 
         $tool['contenttypes'] = $addoptions;
+    }
+
+    private function get_visibility() {
+        global $DB;
+        if (!$this->folderid) {
+            return content::VISIBILITY_PUBLIC;
+        }
+        return $DB->get_field('contentbank_folders', 'visibility', ['id' => $this->folderid]);
     }
 }

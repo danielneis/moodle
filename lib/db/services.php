@@ -2765,6 +2765,14 @@ $functions = array(
         'ajax'          => 'true',
         'capabilities'  => 'moodle/contentbank:createfolder',
     ],
+    'core_contentbank_set_folder_visibility' => [
+        'classname'     => 'core_contentbank\external\set_folder_visibility',
+        'classpath'     => '',
+        'description'   => 'Set the visibility of a folder in the content bank.',
+        'type'          => 'write',
+        'ajax'          => true,
+        'capabilities'  => 'moodle/contentbank:createfolder',
+    ],
     'core_contentbank_delete_folder' => [
         'classname'     => 'core_contentbank\external\delete_folder',
         'classpath'     => '',

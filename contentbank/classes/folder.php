@@ -34,9 +34,17 @@ use stdClass;
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class folder {
+    /**
+     * @var int Visibility value. Public content is visible to all users with access to the content bank of the
+     * appropriate context.
+     */
+    public const VISIBILITY_PUBLIC = 1;
 
-    /** @var stdClass $content The object to manage this content. **/
-    protected $content  = null;
+    /**
+     * @var int Visibility value. Unlisted content is only visible to the author and to users with
+     * moodle/contentbank:viewunlistedcontent capability.
+     */
+    public const VISIBILITY_UNLISTED = 2;
 
     /**
      * Content bank folder constructor
@@ -45,7 +53,7 @@ class folder {
      * @return folder
      */
     public function __construct(stdClass $folder) {
-        $this->content = $folder;
+        $this->folder = $folder;
     }
 
     /**
@@ -97,7 +105,7 @@ class folder {
     public function update(): bool {
         global $USER, $DB;
 
-        $folder = $this->content;
+        $folder = $this->folder;
         $folder->usermodified = $USER->id;
         $folder->timemodified = time();
 
@@ -126,7 +134,7 @@ class folder {
      * @return int   The folder ID.
      */
     public function get_id(): int {
-        return $this->content->id;
+        return $this->folder->id;
     }
 
     /**
@@ -135,7 +143,7 @@ class folder {
      * @return string   The name of the folder.
      */
     public function get_name(): string {
-        return $this->content->name;
+        return $this->folder->name;
     }
 
     /**
@@ -145,7 +153,7 @@ class folder {
      * @return boolean  True if the folder has been succesfully updated. False otherwise.
      */
     public function set_name(string $name): bool {
-        $this->content->name = $name;
+        $this->folder->name = $name;
         return $this->update();
     }
 
@@ -155,7 +163,7 @@ class folder {
      * @return int   The parentid of the folder.
      */
     public function get_parent_id(): int {
-        return $this->content->parent;
+        return $this->folder->parent;
     }
 
     /**
@@ -164,7 +172,7 @@ class folder {
      * @return string   The path of the folder.
      */
     public function get_path(): string {
-        return $this->content->path;
+        return $this->folder->path;
     }
 
     /**
@@ -174,7 +182,7 @@ class folder {
      * @return boolean  True if the folder has been succesfully updated. False otherwise.
      */
     public function set_path(string $path): bool {
-        $this->content->path = $path;
+        $this->folder->path = $path;
         return $this->update();
     }
 
@@ -190,8 +198,8 @@ class folder {
                  WHERE cbf.contextid = :contextid
                    AND " . $DB->sql_like('cbf.path', ':path', false, false);
         $params = [
-            'path' => $DB->sql_like_escape($this->content->path) . '/%',
-            'contextid' => $this->content->contextid
+            'path' => $DB->sql_like_escape($this->folder->path) . '/%',
+            'contextid' => $this->folder->contextid
         ];
         $count = $DB->get_records_sql($sql, $params);
         $count = array_pop($count);
@@ -210,5 +218,56 @@ class folder {
     public static function get_icon(): string {
         global $OUTPUT;
         return $OUTPUT->image_url('f/folder-64',  'moodle')->out(false);
+    }
+
+    public function can_manage() {
+        return true;
+    }
+
+    public function set_visibility(int $visibility) {
+        if (!in_array($visibility, [self::VISIBILITY_PUBLIC, self::VISIBILITY_UNLISTED])) {
+            return false;
+        }
+        $this->folder->visibility = $visibility;
+        return $this->update_folder();
+    }
+
+    /**
+     * Updates contentbank_folders table with information in $this->folder.
+     *
+     * @return boolean  True if the folder has been succesfully updated. False otherwise.
+     * @throws \coding_exception if not loaded.
+     */
+    public function update_folder(): bool {
+        global $USER, $DB;
+
+        // A record with the id must exist in 'contentbank_folders' table.
+        // To improve performance, we are only checking the id is set, but no querying the database.
+        if (!isset($this->folder->id)) {
+            throw new coding_exception(get_string('invalidfolderid', 'error'));
+        }
+        $this->folder->usermodified = $USER->id;
+        $this->folder->timemodified = time();
+        return $DB->update_record('contentbank_folders', $this->folder);
+    }
+
+    /**
+     * Returns user has access permission for the content itself (based on what plugin needs).
+     *
+     * @return bool     True if content could be accessed. False otherwise.
+     */
+    public function is_view_allowed(): bool {
+        // Plugins can overwrite this method in case they want to check something related to content properties.
+        global $USER, $DB;
+        $context = \context::instance_by_id($this->folder->contextid);
+
+        $displaypreference = get_user_preferences('contentbank_displayunlisted', 1);
+
+        if (($this->folder->visibility == self::VISIBILITY_UNLISTED) && !$displaypreference) {
+            return false;
+        }
+        return ($USER->id == $this->folder->usercreated) ||
+            ($this->folder->visibility == self::VISIBILITY_PUBLIC) ||
+            has_capability('moodle/contentbank:viewunlistedcontent', $context);
     }
 }

@@ -74,6 +74,7 @@ $string['displayicons'] = 'Display content bank with icons';
 $string['file'] = 'Upload content';
 $string['file_help'] = 'Files may be stored in the content bank for use in courses. Only files used by content types enabled on the site may be uploaded.';
 $string['foldercreated'] = 'Folder created';
+$string['foldervisibilitychanged'] = 'The folder has been made {$a}.';
 $string['itemsfound'] = '{$a} items found';
 $string['language'] = 'Language';
 $string['lastmodified'] = 'Last modified';

@@ -3214,5 +3214,34 @@ privatefiles,moodle|/user/files.php';
         upgrade_main_savepoint(true, 2022112804.03);
     }
 
+    if ($oldversion < 2022112804.04) {
+
+        // Define field visibility to be added to contentbank_folders.
+        $table = new xmldb_table('contentbank_folders');
+        $field = new xmldb_field('visibility', XMLDB_TYPE_INTEGER, '1', null, XMLDB_NOTNULL, null, '1', 'timemodified');
+
+        // Conditionally launch add field visibility.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        $index = new xmldb_index('visibility', XMLDB_INDEX_NOTUNIQUE, ['visibility']);
+
+        // Conditionally launch add index visibility.
+        if (!$dbman->index_exists($table, $index)) {
+            $dbman->add_index($table, $index);
+        }
+
+        $index = new xmldb_index('parentvisibility', XMLDB_INDEX_NOTUNIQUE, ['parent', 'visibility']);
+
+        // Conditionally launch add index parentvisibility.
+        if (!$dbman->index_exists($table, $index)) {
+            $dbman->add_index($table, $index);
+        }
+
+        // Main savepoint reached.
+        upgrade_main_savepoint(true, 2022112804.04);
+    }
+
     return true;
 }

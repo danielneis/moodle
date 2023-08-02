@@ -380,51 +380,51 @@ function page_pluginfile($course, $cm, $context, $filearea, $args, $forcedownloa
         }
 
         // If the file is from contentbank, preprocess the pdf.
-        $sql = "SELECT f.*
-                  FROM {files} f
-                  WHERE f.contenthash = ?
-                    AND f.component = ?
-                    AND f.filearea = ?
-                    AND f.filename != ?
-                  LIMIT 1";
-        $params = [$file->get_contenthash(), 'contentbank', 'public', '.'];
-        if ($contentbankfile = $DB->get_record_sql($sql, $params)) {
-            $stored_file = $fs->get_file($contentbankfile->contextid,
-                'contentbank', 'public', $contentbankfile->itemid, $contentbankfile->filepath, $contentbankfile->filename);
-            if ($stored_file && !$stored_file->is_directory()) {
+        if ($file->get_reference()) {
+            $params = file_storage::unpack_reference($file->get_reference(), true);
+            if ($content = $DB->get_record('contentbank_content', ['id' => $params['itemid']])) {
 
-                $filename = $stored_file->get_filename();
-                $originalfilename = $filename;
-                if ((strpos(strtolower($filename), '.odp') !== false) ||
-                    (strpos(strtolower($filename), '.ppt') !== false) ||
-                    (strpos(strtolower($filename), '.doc') !== false)) {
-
-                    $converter = new \core_files\converter();
-                    $conversion = $converter->start_conversion($stored_file, 'pdf', true);
-                    if (!$conversion || !$stored_file = $conversion->get_destfile()) {
-                        throw new moodle_exception('convertererror', 'contenttype_document');
-                    }
-                    $filenamearray = explode('.', $filename);
-                    $filename = $filenamearray[0] . '.pdf';
-
+                if (!empty($content->externalurl)) {
+                    redirect($content->externalurl);
                 }
-                if (strpos(strtolower($filename), '.pdf') !== false) {
-                    try {
-                        $pdf = \contenttype_document\contenttype::process_pdf($stored_file, $coursecontext, $contentbankfile->itemid, $originalfilename);
-                        \core\session\manager::write_close(); // Unlock session during file serving.
 
-                        if ($forcedownload) {
-                            $pdf->Output('D', $filename, true);
-                        } else {
-                            $pdf->Output('I', $filename, true);
+                $stored_file = $fs->get_file(
+                        $params['contextid'], 'contentbank', 'public', $params['itemid'], $params['filepath'], $params['filename']);
+                if ($stored_file && !$stored_file->is_directory()) {
+
+                    $filename = $stored_file->get_filename();
+                    $originalfilename = $filename;
+                    if ((strpos(strtolower($filename), '.odp') !== false) ||
+                        (strpos(strtolower($filename), '.ppt') !== false) ||
+                        (strpos(strtolower($filename), '.doc') !== false)) {
+
+                        $converter = new \core_files\converter();
+                        $conversion = $converter->start_conversion($stored_file, 'pdf', true);
+                        if (!$conversion || !$stored_file = $conversion->get_destfile()) {
+                            throw new moodle_exception('convertererror', 'contenttype_document');
                         }
-                        exit;
+                        $filenamearray = explode('.', $filename);
+                        $filename = $filenamearray[0] . '.pdf';
 
-                    } catch (Exception $e) {
-                        send_stored_file($stored_file, 0, 0, true, $options); // must force download - security!
                     }
-                }
+                    if (strpos(strtolower($filename), '.pdf') !== false) {
+                        try {
+                            $pdf = \contenttype_document\contenttype::process_pdf($stored_file, $coursecontext, $params['itemid'], $originalfilename);
+                            \core\session\manager::write_close(); // Unlock session during file serving.
 
+                            if ($forcedownload) {
+                                $pdf->Output('D', $filename, true);
+                            } else {
+                                $pdf->Output('I', $filename, true);
+                            }
+                            exit;
+
+                        } catch (Exception $e) {
+                            send_stored_file($stored_file, 0, 0, true, $options); // must force download - security!
+                        }
+                    }
+
+                }
             }
         }
 

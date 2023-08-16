@@ -770,6 +770,11 @@ if ($hassiteconfig) {
 global $USER;
 $canconfigcontentbank = $hassiteconfig ||
     user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'p_administrador']), $systemcontext->id) ||
+    user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'p_professor']), $systemcontext->id) ||
+    user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'coordenacaoacademica']), $systemcontext->id) ||
+    user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'diretorprograma']), $systemcontext->id) ||
+    user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'diretoracademico']), $systemcontext->id) ||
+    user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'coordenacaoadmissao']), $systemcontext->id) ||
     user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'p_materiais']), $systemcontext->id)
     ;
 if ($canconfigcontentbank) {

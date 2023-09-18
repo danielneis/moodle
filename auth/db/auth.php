@@ -81,10 +81,13 @@ class auth_plugin_db extends auth_plugin_base {
                 }
             }
 
-            $authdb = $this->db_init();
+            $authdb = $this->localdb_init();
 
             $rs = $authdb->Execute("SELECT *
-                                      FROM {$this->config->table}
+                                      FROM usuarios
+                                     WHERE {$this->config->fielduser} = '".$this->ext_addslashes($extusername)."'");
+var_dump("SELECT *
+                                      FROM usuarios
                                      WHERE {$this->config->fielduser} = '".$this->ext_addslashes($extusername)."'");
             if (!$rs) {
                 $authdb->Close();
@@ -109,10 +112,10 @@ class auth_plugin_db extends auth_plugin_base {
         } else {
             // Normal case: use external db for both usernames and passwords.
 
-            $authdb = $this->db_init();
+            $authdb = $this->localdb_init();
 
             $rs = $authdb->Execute("SELECT {$this->config->fieldpass}
-                                      FROM {$this->config->table}
+                                      FROM usuarios
                                      WHERE {$this->config->fielduser} = '".$this->ext_addslashes($extusername)."'");
             if (!$rs) {
                 $authdb->Close();
@@ -172,6 +175,29 @@ class auth_plugin_db extends auth_plugin_base {
     }
 
     /**
+     * Connect to local database.
+     *
+     * @return ADOConnection
+     * @throws moodle_exception
+     */
+    function localdb_init() {
+        if ($this->is_configured() === false) {
+            throw new moodle_exception('auth_dbcantconnect', 'auth_db');
+        }
+
+        // Connect to the external database (forcing new connection).
+	$localdb = ADONewConnection('mysqli');
+        if (!empty($this->config->debugauthdb)) {
+            $localdb->debug = true;
+            ob_start(); //Start output buffer to allow later use of the page headers.
+        }
+	$localdb->Connect('localhost', 'mdlexterno', 'senhadobancoexterno', 'banco_externo', true);
+        $localdb->SetFetchMode(ADODB_FETCH_ASSOC);
+
+        return $localdb;
+    }
+
+    /**
      * Returns user attribute mappings between moodle and the external database.
      *
      * @return array
@@ -207,7 +233,7 @@ class auth_plugin_db extends auth_plugin_base {
 
         $extusername = core_text::convert($username, 'utf-8', $this->config->extencoding);
 
-        $authdb = $this->db_init();
+        $authdb = $this->localdb_init();
 
         // Array to map local fieldnames we want, to external fieldnames.
         $selectfields = $this->db_attributes();
@@ -225,7 +251,7 @@ class auth_plugin_db extends auth_plugin_base {
             }
             $select = implode(', ', $select);
             $sql = "SELECT $select
-                      FROM {$this->config->table}
+                      FROM usuarios
                      WHERE {$this->config->fielduser} = '".$this->ext_addslashes($extusername)."'";
 
             if ($rs = $authdb->Execute($sql)) {
@@ -294,7 +320,11 @@ class auth_plugin_db extends auth_plugin_base {
         require_once($CFG->dirroot . '/user/lib.php');
 
         // List external users.
-        $userlist = $this->get_userlist();
+	try {
+	    $userlist = $this->get_userlist();
+	} catch (\Exception $e) {
+	    var_dump($e);die();
+	}
 
         // Delete obsolete internal users.
         if (!empty($this->config->removeuser)) {
@@ -495,10 +525,10 @@ class auth_plugin_db extends auth_plugin_base {
 
         $extusername = core_text::convert($username, 'utf-8', $this->config->extencoding);
 
-        $authdb = $this->db_init();
+        $authdb = $this->localdb_init();
 
         $rs = $authdb->Execute("SELECT *
-                                  FROM {$this->config->table}
+                                  FROM usuarios
                                  WHERE {$this->config->fielduser} = '".$this->ext_addslashes($extusername)."' ");
 
         if (!$rs) {
@@ -518,11 +548,11 @@ class auth_plugin_db extends auth_plugin_base {
         // Init result value.
         $result = array();
 
-        $authdb = $this->db_init();
+        $authdb = $this->localdb_init();
 
         // Fetch userlist.
         $rs = $authdb->Execute("SELECT {$this->config->fielduser}
-                                  FROM {$this->config->table} ");
+                                  FROM usuarios ");
 
         if (!$rs) {
             throw new \moodle_exception('auth_dbcantconnect', 'auth_db');
@@ -580,7 +610,7 @@ class auth_plugin_db extends auth_plugin_base {
 
         $extusername = core_text::convert($olduser->username, 'utf-8', $this->config->extencoding);
 
-        $authdb = $this->db_init();
+        $authdb = $this->localdb_init();
 
         $update = array();
         foreach($curruser as $key=>$value) {
@@ -603,7 +633,7 @@ class auth_plugin_db extends auth_plugin_base {
             }
         }
         if (!empty($update)) {
-            $sql = "UPDATE {$this->config->table}
+            $sql = "UPDATE usuarios
                        SET ".implode(',', $update)."
                      WHERE {$this->config->fielduser} = ?";
             if (!$authdb->Execute($sql, array($this->ext_addslashes($extusername)))) {
@@ -786,5 +816,32 @@ class auth_plugin_db extends auth_plugin_base {
         debugging('The method clean_data() has been deprecated, please use core_user::clean_data() instead.',
             DEBUG_DEVELOPER);
         return core_user::clean_data($user);
+    }
+
+    function sync_spr(progress_trace $trace, $do_updates=false) {
+
+        $authdb = $this->db_init();
+        // Fetch userlist.
+	$trace->output('Conectado. ' . time());
+        $rs = $authdb->Execute("SELECT nome, sobrenome, cpf, email
+                                  FROM {$this->config->table}");
+	$trace->output('Select realizado no  banco externo. ' . time());
+
+        if (!$rs) {
+            throw new \moodle_exception('auth_dbcantconnect', 'auth_db');
+	} else {
+	    $localdb = $this->localdb_init();
+
+	    $localdb->Execute('DELETE FROM usuarios');
+            while ($rec = $rs->FetchRow()) {
+                $rec = array_change_key_case((array)$rec, CASE_LOWER);
+		$localdb->Execute('INSERT INTO banco_externo.usuarios
+		                           (nome, sobrenome, cpf, email)
+					 VALUES (?, ?, ?, ?)', array_values($rec));
+            }
+	    $trace->output('Inserts feitos no banco local. ' . time());
+	    $localdb->Close();
+	    $authdb->Close();
+	}
     }
 }

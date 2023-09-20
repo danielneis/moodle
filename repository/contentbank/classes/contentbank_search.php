@@ -39,7 +39,7 @@ class contentbank_search {
      *
      * @param string $search The search string
      * @return array[] The array containing all content file nodes that match the search criteria. Each content node is
-     *                 an array with keys: customfield_code, shorttitle, title, datemodified, datecreated, author, license, isref, source,
+     *                 an array with keys: customfield_code, shorttitle, title, folder, datemodified, datecreated, author, license, isref, source,
      *                 icon, thumbnail.
      */
     public static function get_search_contents(string $search): array {
@@ -64,6 +64,11 @@ class contentbank_search {
                         $contentnode['customfield_code'] = $code;
                     } else {
                         $contentnode['customfield_code'] = '';
+                    }
+                    if ($folder = $DB->get_field('contentbank_folders', 'name', ['id' => $content->get_folderid()])) {
+                        $contentnode['folder'] = $folder;
+                    } else {
+                        $contentnode['folder'] = '';
                     }
                     $list[] = $contentnode;
                 }

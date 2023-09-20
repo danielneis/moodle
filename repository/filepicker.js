@@ -376,6 +376,8 @@ YUI.add('moodle-core_filepicker', function(Y) {
                     sortable: true, sortFn: sortFoldersFirst},
                 {key: "displayname", label: M.util.get_string('name', 'moodle'), allowHTML: true, formatter: formatTitle,
                     sortable: true, sortFn: sortFoldersFirst},
+                {key: "folder", label: 'Pasta', allowHTML: true, formatter: formatValue,
+                    sortable: true, sortFn: sortFoldersFirst},
                 {key: "datemodified", label: M.util.get_string('lastmodified', 'moodle'), allowHTML: true, formatter: formatValue,
                     sortable: true, sortFn: sortFoldersFirst},
             ];

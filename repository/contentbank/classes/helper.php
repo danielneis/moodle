@@ -146,9 +146,15 @@ class helper {
 
             $encodedpath = base64_encode(json_encode($params));
 
+            $filename = $file->get_filename();
+            if (strpos($filename, '.') !== false) {
+                $tmp = explode('.', $filename);
+                $extension = array_pop($tmp);
+                $filename = $content->get_name() . '.' . $extension;
+            }
             $node = [
                 'shorttitle' => $content->get_name(),
-                'title' => $file->get_filename(),
+                'title' => $filename,
                 'datemodified' => $file->get_timemodified(),
                 'datecreated' => $file->get_timecreated(),
                 'author' => $file->get_author(),

@@ -64,41 +64,37 @@ foreach ($files as $file) {
     }
     $pathinzip = $file->get_filepath() . $file->get_filename();
 
-    $sql = "SELECT f.*
-              FROM {files} f
-              WHERE f.contenthash = ?
-                AND f.component = ?
-                AND f.filearea = ?
-                AND f.filename != ?
-              LIMIT 1";
-    $params = [$file->get_contenthash(), 'contentbank', 'public', '.'];
-    if ($contentbankfile = $DB->get_record_sql($sql, $params)) {
-        $stored_file = $fs->get_file($contentbankfile->contextid,
-            'contentbank', 'public', $contentbankfile->itemid, $contentbankfile->filepath, $contentbankfile->filename);
-        if ($stored_file && !$stored_file->is_directory()) {
+    // If the file is from contentbank, preprocess the pdf.
+    if ($file->get_reference()) {
+        $params = file_storage::unpack_reference($file->get_reference(), true);
+        if ($content = $DB->get_record('contentbank_content', ['id' => $params['itemid']])) {
+            $stored_file = $fs->get_file(
+                    $params['contextid'], 'contentbank', 'public', $params['itemid'], $params['filepath'], $params['filename']);
+            if ($stored_file && !$stored_file->is_directory()) {
 
-            $sffilename = $stored_file->get_filename();
-            $originalfilename = $sffilename;
-            if ((strpos(strtolower($sffilename), '.odp') !== false) ||
-                (strpos(strtolower($sffilename), '.ppt') !== false) ||
-                (strpos(strtolower($sffilename), '.doc') !== false)) {
+                $sffilename = $stored_file->get_filename();
+                $originalfilename = $sffilename;
+                if ((strpos(strtolower($sffilename), '.odp') !== false) ||
+                    (strpos(strtolower($sffilename), '.ppt') !== false) ||
+                    (strpos(strtolower($sffilename), '.doc') !== false)) {
 
-                $converter = new \core_files\converter();
-                $conversion = $converter->start_conversion($stored_file, 'pdf', true);
-                if (!$conversion || !$stored_file = $conversion->get_destfile()) {
-                    throw new moodle_exception('convertererror', 'contenttype_document');
+                    $converter = new \core_files\converter();
+                    $conversion = $converter->start_conversion($stored_file, 'pdf', true);
+                    if (!$conversion || !$stored_file = $conversion->get_destfile()) {
+                        throw new moodle_exception('convertererror', 'contenttype_document');
+                    }
+                    $filenamearray = explode('.', $sffilename);
+                    $sffilename = $filenamearray[0] . '.pdf';
+
                 }
-                $filenamearray = explode('.', $sffilename);
-                $sffilename = $filenamearray[0] . '.pdf';
-
-            }
-            if (strpos(strtolower($sffilename), '.pdf') !== false) {
-                try {
-                    $pdf = \contenttype_document\contenttype::process_pdf($stored_file, $coursecontext, $contentbankfile->itemid, $originalfilename);
-                    $pdfstr = $pdf->Output('S');
-                    $zipwriter->add_file_from_string($pathinzip, $pdfstr);
-                } catch (Exception $e) {
-                    $zipwriter->add_file_from_stored_file($pathinzip, $file);
+                if (strpos(strtolower($sffilename), '.pdf') !== false) {
+                    try {
+                        $pdf = \contenttype_document\contenttype::process_pdf($stored_file, $coursecontext, $params['itemid'], $originalfilename);
+                        $pdfstr = $pdf->Output('S');
+                        $zipwriter->add_file_from_string($pathinzip, $pdfstr);
+                    } catch (Exception $e) {
+                        $zipwriter->add_file_from_stored_file($pathinzip, $file);
+                    }
                 }
             }
         }

@@ -102,7 +102,11 @@ class data_controller extends \core_customfield\data_controller {
             $data = file_postupdate_standard_editor($data, 'field', $textoptions, $textoptions['context'],
                 'customfield_textarea', 'value', $this->get('id'));
             $this->data->set('value', $data->field);
-            $this->data->set('valueformat', $data->fieldformat);
+            if (is_null($data->fieldformat)) {
+                $this->data->set('valueformat', FORMAT_MOODLE);
+            } else {
+                $this->data->set('valueformat', $data->fieldformat);
+            }
 
             $this->save();
         }

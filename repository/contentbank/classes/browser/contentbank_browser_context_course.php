@@ -37,9 +37,11 @@ class contentbank_browser_context_course extends contentbank_browser {
      * Constructor.
      *
      * @param \context_course $context The current context
+     * @param int $folderid The current folder
      */
-    public function __construct(\context_course $context) {
+    public function __construct(\context_course $context, int $folderid) {
         $this->context = $context;
+        $this->folderid = $folderid;
     }
 
     /**

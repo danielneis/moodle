@@ -33,6 +33,8 @@ require_course_login($course, true, $cm);
 $context = context_module::instance($cm->id);
 require_capability('mod/folder:view', $context);
 
+$coursecontext = $context->get_course_context(false);
+
 $folder = $DB->get_record('folder', array('id' => $cm->instance), '*', MUST_EXIST);
 
 $downloadable = folder_archive_available($folder, $cm);
@@ -61,7 +63,44 @@ foreach ($files as $file) {
         continue;
     }
     $pathinzip = $file->get_filepath() . $file->get_filename();
-    $zipwriter->add_file_from_stored_file($pathinzip, $file);
+
+    // If the file is from contentbank, preprocess the pdf.
+    if ($file->get_reference()) {
+        $params = file_storage::unpack_reference($file->get_reference(), true);
+        if ($content = $DB->get_record('contentbank_content', ['id' => $params['itemid']])) {
+            $stored_file = $fs->get_file(
+                    $params['contextid'], 'contentbank', 'public', $params['itemid'], $params['filepath'], $params['filename']);
+            if ($stored_file && !$stored_file->is_directory()) {
+
+                $sffilename = $stored_file->get_filename();
+                $originalfilename = $sffilename;
+                if ((strpos(strtolower($sffilename), '.odp') !== false) ||
+                    (strpos(strtolower($sffilename), '.ppt') !== false) ||
+                    (strpos(strtolower($sffilename), '.doc') !== false)) {
+
+                    $converter = new \core_files\converter();
+                    $conversion = $converter->start_conversion($stored_file, 'pdf', true);
+                    if (!$conversion || !$stored_file = $conversion->get_destfile()) {
+                        throw new moodle_exception('convertererror', 'contenttype_document');
+                    }
+                    $filenamearray = explode('.', $sffilename);
+                    $sffilename = $filenamearray[0] . '.pdf';
+
+                }
+                if (strpos(strtolower($sffilename), '.pdf') !== false) {
+                    try {
+                        $pdf = \contenttype_document\contenttype::process_pdf($stored_file, $coursecontext, $params['itemid'], $originalfilename);
+                        $pdfstr = $pdf->Output('S');
+                        $zipwriter->add_file_from_string($pathinzip, $pdfstr);
+                    } catch (Exception $e) {
+                        $zipwriter->add_file_from_stored_file($pathinzip, $file);
+                    }
+                }
+            }
+        }
+    } else {
+        $zipwriter->add_file_from_stored_file($pathinzip, $file);
+    }
 }
 
 // Finish the archive.

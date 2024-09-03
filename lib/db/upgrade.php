@@ -1249,6 +1249,128 @@ function xmldb_main_upgrade($oldversion) {
 
         upgrade_main_savepoint(true, 2024082900.01);
     }
+    if ($oldversion < 2022040100.00) {
+
+        // Define table to store contentbank_folders.
+        $table = new xmldb_table('contentbank_folders');
+
+        // Adding fields to table contentbank_folders.
+        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+        $table->add_field('name', XMLDB_TYPE_CHAR, '255', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('contextid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('parent', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        $table->add_field('depth', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        $table->add_field('path', XMLDB_TYPE_CHAR, '255', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('usercreated', XMLDB_TYPE_INTEGER, '10', null, null, null, null);
+        $table->add_field('usermodified', XMLDB_TYPE_INTEGER, '10', null, null, null, null);
+        $table->add_field('timecreated', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, 0);
+        $table->add_field('timemodified', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, 0);
+
+        // Adding keys to table contentbank_folders.
+        $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+        $table->add_key('contextid', XMLDB_KEY_FOREIGN, ['contextid'], 'context', ['id']);
+        $table->add_key('parent', XMLDB_KEY_FOREIGN, ['parent'], 'contentbank_folders', ['id']);
+        $table->add_key('usermodified', XMLDB_KEY_FOREIGN, ['usermodified'], 'user', ['id']);
+        $table->add_key('usercreated', XMLDB_KEY_FOREIGN, ['usercreated'], 'user', ['id']);
+
+        // Adding indexes to table contentbank_folders.
+        $table->add_index('name', XMLDB_INDEX_NOTUNIQUE, ['name']);
+
+        if (!$dbman->table_exists($table)) {
+            $dbman->create_table($table);
+        }
+
+        $table = new xmldb_table('contentbank_content');
+        $field = new xmldb_field('parent', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0', 'contextid');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+        $index = new xmldb_index('parent', XMLDB_INDEX_NOTUNIQUE, ['parent']);
+
+        // Conditionally launch add index deleted.
+        if (!$dbman->index_exists($table, $index)) {
+            $dbman->add_index($table, $index);
+        }
+
+        // Main savepoint reached.
+        upgrade_main_savepoint(true, 2022040100.00);
+    }
+
+    if ($oldversion < 2022040100.01) {
+
+        // Define field deleted to be added to contentbank_content.
+        $table = new xmldb_table('contentbank_content');
+        $field = new xmldb_field('deleted', XMLDB_TYPE_INTEGER, '1', null, XMLDB_NOTNULL, null, '0', 'timemodified');
+
+        // Conditionally launch add field deleted.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        $index = new xmldb_index('deleted', XMLDB_INDEX_NOTUNIQUE, ['deleted']);
+
+        // Conditionally launch add index deleted.
+        if (!$dbman->index_exists($table, $index)) {
+            $dbman->add_index($table, $index);
+        }
+
+        // Main savepoint reached.
+        upgrade_main_savepoint(true, 2022040100.01);
+    }
+
+    if ($oldversion < 2022040100.02) {
+
+        if ($fields = $DB->get_records('customfield_field', ['type' => 'select'])) {
+            foreach ($fields as $f) {
+                $configdata = json_decode($f->configdata);
+                $options = preg_split("/\s*\n\s*/", trim($configdata->options));
+                if ($data = $DB->get_records('customfield_data', ['fieldid' => $f->id])) {
+                    foreach ($data as $d) {
+                        if (empty($d->charvalue)) {
+                            if (isset($options[$d->intvalue])) {
+                                $d->charvalue = $options[$d->intvalue];
+                                $DB->update_record('customfield_data', $d);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        upgrade_main_savepoint(true, 2022040100.02);
+    }
+
+    if ($oldversion < 2022040100.03) {
+
+        if ($fields = $DB->get_records('customfield_field', ['type' => 'select'])) {
+            foreach ($fields as $f) {
+                $configdata = json_decode($f->configdata);
+                $options = preg_split("/\s*\n\s*/", trim($configdata->options));
+                if ($data = $DB->get_records('customfield_data', ['fieldid' => $f->id])) {
+                    foreach ($data as $d) {
+                        if (empty($d->charvalue)) {
+                            $d->charvalue = $options[$d->intvalue];
+                            $DB->update_record('customfield_data', $d);
+                        }
+                    }
+                }
+            }
+        }
+        upgrade_main_savepoint(true, 2022040100.03);
+    }
+
+    if ($oldversion < 2022040100.04) {
+
+        // Rename field parent on table contentbank_content to NEWNAMEGOESHERE.
+        $table = new xmldb_table('contentbank_content');
+        $field = new xmldb_field('parent', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0', 'contenttype');
+
+        // Launch rename field parent.
+        //$dbman->rename_field($table, $field, 'folderid');
+
+        // Main savepoint reached.
+        upgrade_main_savepoint(true, 2022040100.04);
+    }
+
 
     return true;
 }

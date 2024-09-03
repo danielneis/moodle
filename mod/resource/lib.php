@@ -366,6 +366,7 @@ function resource_pluginfile($course, $cm, $context, $filearea, $args, $forcedow
     if ($context->contextlevel != CONTEXT_MODULE) {
         return false;
     }
+    $coursecontext = $context->get_course_context(false);
 
     require_course_login($course, true, $cm);
     if (!has_capability('mod/resource:view', $context)) {
@@ -415,6 +416,65 @@ function resource_pluginfile($course, $cm, $context, $filearea, $args, $forcedow
         $CFG->embeddedsoforcelinktarget = true;
     } else {
         $filter = 0;
+    }
+    if ($mimetype === 'document/unknown') {
+        $sql = "SELECT *
+                  FROM {contentbank_content} c
+                 WHERE name = ?";
+        if ($content = $DB->get_record_sql($sql, ['name' => $file->get_filename()])) {
+            $tracking = \contenttype_document\contenttype::save_tracking($context, $content->id);
+            header('Location: '. $content->externalurl);
+            exit;
+        }
+    } else {
+        if ($file->get_reference()) {
+            $params = file_storage::unpack_reference($file->get_reference(), true);
+            if ($content = $DB->get_record('contentbank_content', ['id' => $params['itemid']])) {
+
+                if (!empty($content->externalurl)) {
+                    redirect($content->externalurl);
+                }
+
+                $stored_file = $fs->get_file(
+                        $params['contextid'], 'contentbank', 'public', $params['itemid'], $params['filepath'], $params['filename']);
+
+                if ($stored_file && !$stored_file->is_directory()) {
+
+                    $filename = $stored_file->get_filename();
+                    $originalfilename = $filename;
+                    if ((strpos(strtolower($filename), '.odp') !== false) ||
+                        (strpos(strtolower($filename), '.ppt') !== false) ||
+                        (strpos(strtolower($filename), '.doc') !== false)) {
+
+                        $converter = new \core_files\converter();
+                        $conversion = $converter->start_conversion($stored_file, 'pdf', true);
+                        if (!$conversion || !$stored_file = $conversion->get_destfile()) {
+                            throw new moodle_exception('convertererror', 'contenttype_document');
+                        }
+                        $filenamearray = explode('.', $filename);
+                        $filename = $filenamearray[0] . '.pdf';
+
+                    }
+                    if (strpos(strtolower($filename), '.pdf') !== false) {
+                        try {
+                            $pdf = \contenttype_document\contenttype::process_pdf($stored_file, $coursecontext, $params['itemid'], $originalfilename);
+                            \core\session\manager::write_close(); // Unlock session during file serving.
+
+                            if ($forcedownload) {
+                                $pdf->Output('D', $filename, true);
+                            } else {
+                                $pdf->Output('I', $filename, true);
+                            }
+                            exit;
+
+                        } catch (Exception $e) {
+                            send_stored_file($stored_file, 0, 0, true, $options); // must force download - security!
+                        }
+                    }
+
+                }
+            }
+        }
     }
 
     // finally send the file

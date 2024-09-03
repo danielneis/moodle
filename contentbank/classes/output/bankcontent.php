@@ -20,6 +20,8 @@ use core\context\{course, coursecat};
 use core\context_helper;
 use core_contentbank\content;
 use core_contentbank\contentbank;
+use core_customfield\output\field_data;
+use moodle_url;
 use renderable;
 use templatable;
 use renderer_base;
@@ -59,6 +61,16 @@ class bankcontent implements renderable, templatable {
      */
     private $allowedcourses;
 
+    /*
+     * @var string    Path of the folder.
+     */
+    private $path = '/';
+
+    /**
+     * @var \core_contentbank\folder[]    Array of folders.
+     */
+    private $folders;
+
     /**
      * Construct this renderable.
      *
@@ -66,12 +78,182 @@ class bankcontent implements renderable, templatable {
      * @param array $toolbar List of content bank toolbar options.
      * @param \context|null $context Optional context to check (default null)
      * @param contentbank $cb Contenbank object.
+     * @param int $folderid   Current folder id.
+     * @param \core_contentbank\folder[] $folders   Array of folders.
      */
-    public function __construct(array $contents, array $toolbar, ?\context $context, contentbank $cb) {
+    public function __construct(array $contents, array $toolbar, ?\context $context, contentbank $cb,
+        int $folderid, array $folders) {
+
+        global $DB;
+
         $this->contents = $contents;
         $this->toolbar = $toolbar;
         $this->context = $context;
         list($this->allowedcategories, $this->allowedcourses) = $cb->get_contexts_with_capabilities_by_user();
+        if ($folderid) {
+            $this->path = $DB->get_field('contentbank_folders', 'path', ['id' => $folderid]);
+        }
+        $this->folders = $folders;
+        $this->folderid = $folderid;
+        $this->breadcrumbs = \core_contentbank\contentbank::make_breadcrumb($folderid, $this->context->id);
+    }
+    /**
+     * Get the content of the "More" dropdown in the tertiary navigation
+     *
+     * @return array|null The options to be displayed in a dropdown in the tertiary navigation
+     * @throws \moodle_exception
+     */
+    protected function get_edit_actions_dropdown(): ?array {
+        global $DB, $PAGE, $USER;
+        $options = [];
+        if (has_capability('moodle/contentbank:createfolder', $this->context) ||
+            user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'editingteacher']))) {
+            if ($this->folderid) {
+                // Add the visibility item to the menu.
+                if (has_capability('moodle/contentbank:viewunlistedcontent', $this->context)) {
+                    switch($this->get_visibility()) {
+                        case content::VISIBILITY_UNLISTED:
+                            $visibilitylabel = get_string('visibilitysetpublic', 'core_contentbank');
+                            $newvisibility = content::VISIBILITY_PUBLIC;
+                            break;
+                        case content::VISIBILITY_PUBLIC:
+                            $visibilitylabel = get_string('visibilitysetunlisted', 'core_contentbank');
+                            $newvisibility = content::VISIBILITY_UNLISTED;
+                            break;
+                        default:
+                            $url = new \moodle_url('/contentbank/index.php', ['contextid' => $this->context->id]);
+                            throw new moodle_exception('contentvisibilitynotfound', 'error', $url, $this->get_visibility());
+                    }
+
+                    if ($visibilitylabel) {
+                        $options[$visibilitylabel] = [
+                            'data-action' => 'setfoldervisibility',
+                            'data-visibility' => $newvisibility,
+                            'data-folderid' => $this->folderid,
+                            'data-contextid' => $this->context->id,
+                        ];
+                    }
+                    $PAGE->requires->js_call_amd('core_contentbank/set_folder_visibility', 'init');
+                }
+                $folderrecord = $DB->get_record('contentbank_folders', ['id' => $this->folderid, 'contextid' => $this->context->id]);
+                $folder = new \core_contentbank\folder($folderrecord);
+                $label = get_string('renamefolder', 'core_contentbank');
+
+                $options[$label] = [
+                    'data-action' => 'renamefolder',
+                    'data-contextid' => $this->context->id,
+                    'data-folderid' => $this->folderid,
+                ];
+
+                $PAGE->requires->js_call_amd(
+                    'core_contentbank/rename_folder',
+                    'initModal',
+                    [
+                        '[data-action="renamefolder"]',
+                        \core_contentbank\form\rename_folder::class,
+                        $this->context->id, $folderrecord->parent, $this->folderid, $folderrecord->name
+                    ]
+                );
+
+                if ($folder->is_empty()) {
+                    $label = get_string('deletefolder', 'core_contentbank');
+
+                    $options[$label] = [
+                        'data-action' => 'deletefolder',
+                        'data-contextid' => $this->context->id,
+                        'data-parentid' => $this->folderid,
+                    ];
+
+                    $PAGE->requires->js_call_amd(
+                        'core_contentbank/delete_folder',
+                        'initModal',
+                        ['[data-action="deletefolder"]', $this->context->id, $this->folderid]
+                    );
+                }
+                $foldersinpath = explode('/', $folderrecord->path);
+                $topfolder = $foldersinpath[1];
+                if ($DB->get_field('contentbank_folders', 'name', ['id' => $topfolder]) == 'Professores') {
+                    $systemctx = \context_system::instance();
+                    $cancreatefolder =
+                        user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'p_professor']), $systemctx->id) ||
+                        user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'p_materiais']), $systemctx->id) ||
+                        user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'p_administrador']), $systemctx->id) ||
+                        user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'p_colaborador']), $systemctx->id) ||
+                        has_capability('moodle/contentbank:createfolder', $this->context);
+                } else {
+                    $cancreatefolder = has_capability('moodle/contentbank:createfolder', $this->context);
+                }
+            } else {
+                $cancreatefolder = has_capability('moodle/contentbank:createfolder', $this->context);
+            }
+        } else {
+            $cancreatefolder  = has_capability('moodle/contentbank:createfolder', $this->context);
+        }
+        if ($cancreatefolder) {
+
+            $label = get_string('newfolder', 'core_contentbank');
+
+            $options[$label] = [
+                'data-action' => 'createfolder',
+                'data-contextid' => $this->context->id,
+                'data-parentid' => $this->folderid,
+            ];
+            $PAGE->requires->js_call_amd(
+                'core_contentbank/create_folder',
+                'initModal',
+                ['[data-action="createfolder"]', \core_contentbank\form\create_folder::class, $this->context->id, $this->folderid]);
+        }
+
+        if (has_capability('moodle/contentbank:deleteanycontent', $this->context)) {
+            $trashlabel = get_string('trash', 'contentbank');
+            $options[$trashlabel] = [
+                'url' => (new moodle_url('/contentbank/trash.php', ['contextid' => $this->context->id]))->out(false)
+            ];
+        }
+
+        if (has_capability('moodle/contentbank:viewunlistedcontent', $this->context)) {
+            $setdisplay = optional_param('displayunlisted', null, PARAM_INT);
+            if (is_null($setdisplay)) {
+                $display = get_user_preferences('contentbank_displayunlisted', 1);
+            } else {
+                set_user_preference('contentbank_displayunlisted', $setdisplay);
+                $display = $setdisplay;
+            }
+            $search = optional_param('search', '', PARAM_CLEAN);
+            $seturl = new moodle_url('/contentbank/index.php',
+                ['contextid' => $this->context->id, 'search' => $search, 'folderid' => $this->folderid]);
+
+            if ($display) {
+                $displaylabel = get_string('dontdisplayunlisted', 'contentbank');
+                $seturl->param('displayunlisted', 0);
+                $icon = 't/show';
+            } else {
+                $displaylabel = get_string('displayunlisted', 'contentbank');
+                $seturl->param('displayunlisted', 1);
+                $icon = 't/hide';
+            }
+            $options[$displaylabel] = [
+                'url' => (new moodle_url($seturl))->out(false)
+            ];
+        }
+        $dropdown = [];
+        if ($options) {
+            foreach ($options as $key => $attribs) {
+                $url = $attribs['url'] ?? '#';
+                $dropdown['options'][] = [
+                    'label' => $key,
+                    'url' => $url,
+                    'attributes' => array_map(function ($key, $value) {
+                        return [
+                            'name' => $key,
+                            'value' => $value
+                        ];
+                    }, array_keys($attribs), $attribs)
+                ];
+            }
+        }
+
+        return $dropdown;
     }
 
     /**
@@ -87,7 +269,28 @@ class bankcontent implements renderable, templatable {
         $PAGE->requires->js_call_amd('core_contentbank/sort', 'init');
 
         $data = new stdClass();
-        $contentdata = array();
+
+        $rooturl = new \moodle_url('/contentbank/index.php', ['contextid' => $this->context->id]);
+        $data->root = $rooturl->out(false);
+
+        $data->breadcrumbs = $this->breadcrumbs;
+
+        $contentdata = [];
+        foreach ($this->folders as $folder) {
+            $link = new \moodle_url('/contentbank/index.php', ['contextid' => $this->context->id, 'folderid' => $folder->id]);
+            $contentdata[] = [
+                'name' => $folder->name,
+                'title' => strtolower($folder->name),
+                'link' => $link->out(false),
+                'icon' => \core_contentbank\folder::get_icon(),
+                'type' => get_string('folder'),
+                'size' => '-',
+                'author' => fullname(\core_user::get_user($folder->usercreated)),
+                'uses' => 0,
+            ];
+        }
+
+        $handler = \core_contentbank\customfield\content_handler::create();
         foreach ($this->contents as $content) {
             $file = $content->get_file();
             $filesize = $file ? $file->get_filesize() : 0;
@@ -100,7 +303,7 @@ class bankcontent implements renderable, templatable {
                 $name = $content->get_name();
             }
             $author = \core_user::get_user($content->get_content()->usercreated);
-            $contentdata[] = array(
+            $currentcontentdata = array(
                 'name' => $name,
                 'title' => strtolower($name),
                 'link' => $contenttype->get_view_url($content),
@@ -111,8 +314,14 @@ class bankcontent implements renderable, templatable {
                 'size' => display_size($filesize),
                 'type' => $mimetype,
                 'author' => fullname($author),
-                'visibilityunlisted' => $content->get_visibility() == content::VISIBILITY_UNLISTED
+                'visibilityunlisted' => (($content->get_visibility() == content::VISIBILITY_UNLISTED) && get_user_preferences('contentbank_displayunlisted', 1) == 1)
             );
+            $instancedata = $handler->get_instance_data($content->get_id());
+            foreach ($instancedata as $d) {
+                $fd = new field_data($d);
+                $currentcontentdata['customfield_' . $fd->get_shortname()] = $fd->get_value();
+            }
+            $contentdata[] = $currentcontentdata;
         }
         $data->viewlist = get_user_preferences('core_contentbank_view_list');
         $data->contents = $contentdata;
@@ -168,6 +377,7 @@ class bankcontent implements renderable, templatable {
             $singleselect->set_label($strchoosecontext, ['class' => 'sr-only']);
             $data->allowedcontexts = $singleselect->export_for_template($output);
         }
+        $data->actionmenu = $this->get_edit_actions_dropdown();
 
         return $data;
     }
@@ -202,6 +412,7 @@ class bankcontent implements renderable, templatable {
                 $addcontenttype->name = $type;
                 // Content type editor base URL.
                 $tool['link']->param('plugin', $type);
+                $tool['link']->param('folderid', $this->folderid);
                 $addcontenttype->baseurl = $tool['link']->out();
                 // Different types of the content type.
                 $addcontenttype->types = $types;
@@ -223,5 +434,13 @@ class bankcontent implements renderable, templatable {
         if (empty($tool['checkbox']) && empty($tool['dropdown'])) {
             $tool['button'] = true;
         }
+    }
+
+    private function get_visibility() {
+        global $DB;
+        if (!$this->folderid) {
+            return content::VISIBILITY_PUBLIC;
+        }
+        return $DB->get_field('contentbank_folders', 'visibility', ['id' => $this->folderid]);
     }
 }

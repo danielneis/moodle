@@ -19,6 +19,7 @@ namespace core_contentbank;
 use core\event\contentbank_content_created;
 use core\event\contentbank_content_deleted;
 use core\event\contentbank_content_viewed;
+use core\event\contentbank_content_updated;
 use stored_file;
 use moodle_url;
 
@@ -85,6 +86,7 @@ abstract class contenttype {
         $entry->contenttype = $this->get_contenttype_name();
         $entry->contextid = $this->context->id;
         $entry->name = $record->name ?? '';
+        $entry->folderid = $record->folderid ?? 0;
         $entry->usercreated = $record->usercreated ?? $USER->id;
         $entry->timecreated = time();
         $entry->usermodified = $entry->usercreated;
@@ -147,7 +149,7 @@ abstract class contenttype {
      * @param  content $content The content to delete.
      * @return boolean true if the content has been deleted; false otherwise.
      */
-    public function delete_content(content $content): bool {
+    public function delete_content_forever(content $content): bool {
         global $DB;
 
         // Delete the file if it exists.
@@ -161,6 +163,74 @@ abstract class contenttype {
             // Trigger an event for deleting this content.
             $record = $content->get_content();
             $event = contentbank_content_deleted::create([
+                'objectid' => $content->get_id(),
+                'relateduserid' => $record->usercreated,
+                'context' => \context::instance_by_id($record->contextid),
+                'other' => [
+                    'contenttype' => $content->get_content_type(),
+                    'name' => $content->get_name()
+                ]
+            ]);
+            $event->add_record_snapshot('contentbank_content', $record);
+            $event->trigger();
+        }
+        return $result;
+    }
+
+    /**
+     * Marks this content as deleted (put in trash).
+     * This method can be overwritten by the plugins if they need to delete specific information.
+     *
+     * @param  content $content The content to delete.
+     * @return boolean true if the content has been deleted; false otherwise.
+     */
+    public function delete_content(content $content): bool {
+        global $DB;
+
+        $deletedcontent = (object)[
+            'id' => $content->get_id(),
+            'deleted' => 1
+        ];
+        // Update the contentbank DB entry.
+        $result = $DB->update_record('contentbank_content', $deletedcontent);
+        if ($result) {
+            // Trigger an event for deleting this content.
+            $record = $content->get_content();
+            $event = contentbank_content_updated::create([
+                'objectid' => $content->get_id(),
+                'relateduserid' => $record->usercreated,
+                'context' => \context::instance_by_id($record->contextid),
+                'other' => [
+                    'contenttype' => $content->get_content_type(),
+                    'name' => $content->get_name()
+                ]
+            ]);
+            $event->add_record_snapshot('contentbank_content', $record);
+            $event->trigger();
+        }
+        return $result;
+    }
+
+    /**
+     * Marks this content as not deleted (restore from trash).
+     * This method can be overwritten by the plugins if they need to restore specific information.
+     *
+     * @param  content $content The content to restore.
+     * @return boolean true if the content has been restored; false otherwise.
+     */
+    public function restore_content(content $content): bool {
+        global $DB;
+
+        $deletedcontent = (object)[
+            'id' => $content->get_id(),
+            'deleted' => 0
+        ];
+        // Update the contentbank DB entry.
+        $result = $DB->update_record('contentbank_content', $deletedcontent);
+        if ($result) {
+            // Trigger an event for deleting this content.
+            $record = $content->get_content();
+            $event = contentbank_content_updated::create([
                 'objectid' => $content->get_id(),
                 'relateduserid' => $record->usercreated,
                 'context' => \context::instance_by_id($record->contextid),
@@ -295,6 +365,11 @@ abstract class contenttype {
      */
     final public function can_access(): bool {
         $classname = 'contenttype/'.$this->get_plugin_name();
+        global $USER, $DB;
+        if (($classname == 'contenttype/document') &&
+            user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'editingteacher']))) {
+            return true;
+        }
         $capability = $classname.":access";
         $hascapabilities = has_capability('moodle/contentbank:access', $this->context)
             && has_capability($capability, $this->context);
@@ -317,8 +392,36 @@ abstract class contenttype {
      * @return bool     True if content could be uploaded. False otherwise.
      */
     final public function can_upload(): bool {
+        global $DB, $USER;
         if (!$this->is_feature_supported(self::CAN_UPLOAD)) {
             return false;
+        }
+        $folderid = optional_param('folderid', 0, PARAM_INT);
+        if ($folderid) {
+            $folderrecord = $DB->get_record('contentbank_folders', ['id' => $folderid, 'contextid' => $this->context->id]);
+            $foldersinpath = explode('/', $folderrecord->path);
+            $topfolder = $foldersinpath[1];
+            if ($DB->get_field('contentbank_folders', 'name', ['id' => $topfolder]) == 'Professores') {
+                $systemctx = \context_system::instance();
+                $canupload =
+                    user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'p_professor']), $systemctx->id) ||
+                    user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'p_materiais']), $systemctx->id) ||
+                    user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'p_administrador']), $systemctx->id) ||
+                    user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'p_colaborador']), $systemctx->id);
+                if ($canupload) {
+                    return true;
+                }
+            }
+        } else {
+                $systemctx = \context_system::instance();
+                $canupload =
+                    user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'p_professor']), $systemctx->id) ||
+                    user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'p_materiais']), $systemctx->id) ||
+                    user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'p_administrador']), $systemctx->id) ||
+                    user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'p_colaborador']), $systemctx->id);
+                if ($canupload) {
+                    return true;
+                }
         }
         if (!$this->can_access()) {
             return false;
@@ -348,7 +451,7 @@ abstract class contenttype {
      * @return bool True if content could be uploaded. False otherwise.
      */
     final public function can_delete(content $content): bool {
-        global $USER;
+        global $DB, $USER;
 
         if ($this->context->id != $content->get_content()->contextid) {
             // The content has to have exactly the same context as this contenttype.
@@ -356,6 +459,22 @@ abstract class contenttype {
         }
 
         $hascapability = has_capability('moodle/contentbank:deleteanycontent', $this->context);
+        if ($content->get_content()->folderid) {
+            $folderrecord = $DB->get_record('contentbank_folders', ['id' => $content->get_content()->folderid, 'contextid' => $this->context->id]);
+            if (!empty($folderrecord)) {
+                $foldersinpath = explode('/', $folderrecord->path);
+                $topfolder = $foldersinpath[1];
+                if ($DB->get_field('contentbank_folders', 'name', ['id' => $topfolder]) == 'Professores') {
+                    $systemctx = \context_system::instance();
+                    $hascapability =
+                        user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'p_professor']), $systemctx->id) ||
+                        user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'p_materiais']), $systemctx->id) ||
+                        user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'p_administrador']), $systemctx->id) ||
+                        user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'p_colaborador']), $systemctx->id) ||
+                        has_capability('moodle/contentbank:deleteanycontent', $this->context);
+                }
+            }
+        }
         if ($content->get_content()->usercreated == $USER->id) {
             // This content has been created by the current user; check if she can delete her content.
             $hascapability = $hascapability || has_capability('moodle/contentbank:deleteowncontent', $this->context);
@@ -391,6 +510,22 @@ abstract class contenttype {
 
         // Check main contentbank management permission.
         $hascapability = has_capability('moodle/contentbank:manageanycontent', $this->context);
+        if ($content->get_content()->folderid) {
+            $folderrecord = $DB->get_record('contentbank_folders', ['id' => $content->get_content()->folderid, 'contextid' => $this->context->id]);
+            if (!empty($folderrecord)) {
+                $foldersinpath = explode('/', $folderrecord->path);
+                $topfolder = $foldersinpath[1];
+                if ($DB->get_field('contentbank_folders', 'name', ['id' => $topfolder]) == 'Professores') {
+                    $systemctx = \context_system::instance();
+                    $hascapability =
+                        user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'p_professor']), $systemctx->id) ||
+                        user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'p_materiais']), $systemctx->id) ||
+                        user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'p_administrador']), $systemctx->id) ||
+                        user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'p_colaborador']), $systemctx->id) ||
+                        has_capability('moodle/contentbank:manageanycontent', $this->context);
+                }
+            }
+        }
         if ($content->get_content()->usercreated == $USER->id) {
             // This content has been created by the current user; check if they can manage their content.
             $hascapability = $hascapability || has_capability('moodle/contentbank:manageowncontent', $this->context);
@@ -429,6 +564,9 @@ abstract class contenttype {
 
         if (!is_null($content) && !$this->can_manage($content)) {
             return false;
+        }
+        if (($this->get_plugin_name() == 'document') && !is_null($content) && $this->can_manage($content)) {
+            return true;
         }
 
         $classname = 'contenttype/'.$this->get_plugin_name();

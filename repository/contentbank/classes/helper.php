@@ -39,16 +39,17 @@ class helper {
      * Get the content bank repository browser for a certain context.
      *
      * @param \context $context The context
+     * @param int $fodlerid The folder
      * @return \repository_contentbank\browser\contentbank_browser|null The content bank repository browser
      */
-    public static function get_contentbank_browser(\context $context): ?contentbank_browser {
+    public static function get_contentbank_browser(\context $context, $folderid): ?contentbank_browser {
         switch ($context->contextlevel) {
             case CONTEXT_SYSTEM:
-                return new \repository_contentbank\browser\contentbank_browser_context_system($context);
+                return new \repository_contentbank\browser\contentbank_browser_context_system($context, $folderid);
             case CONTEXT_COURSECAT:
-                return new \repository_contentbank\browser\contentbank_browser_context_coursecat($context);
+                return new \repository_contentbank\browser\contentbank_browser_context_coursecat($context, $folderid);
             case CONTEXT_COURSE:
-                return new \repository_contentbank\browser\contentbank_browser_context_course($context);
+                return new \repository_contentbank\browser\contentbank_browser_context_course($context, $folderid);
         }
         return null;
     }
@@ -74,6 +75,25 @@ class helper {
     }
 
     /**
+     * Create the content bank folder node.
+     *
+     * @param string $folder The folder record
+     * @return array The contentbank folder node
+     */
+    public static function create_contentbank_folder_node(object $folder): array {
+        global $OUTPUT;
+
+        return [
+            'title' => $folder->name,
+            'datemodified' => $folder->timemodified,
+            'datecreated' => $folder->timecreated,
+            'path' => base64_encode(json_encode(['contextid' => $folder->contextid, 'folderid' => $folder->id])),
+            'thumbnail' => $OUTPUT->image_url(file_folder_icon(90))->out(false),
+            'children' => []
+        ];
+    }
+
+    /**
      * Create the content bank content node.
      *
      * @param \core_contentbank\content $content The content bank content
@@ -81,40 +101,74 @@ class helper {
      */
     public static function create_contentbank_content_node(\core_contentbank\content $content): ?array {
         global $OUTPUT;
-        // Only content files are currently supported, but should be able to create content folder nodes in the future.
-        // Early return if the content is not a stored file.
-        if (!$file = $content->get_file()) {
-            return null;
-        }
-
-        $params = [
-            'contextid' => $file->get_contextid(),
-            'component' => $file->get_component(),
-            'filearea'  => $file->get_filearea(),
-            'itemid'    => $file->get_itemid(),
-            'filepath'  => $file->get_filepath(),
-            'filename'  => $file->get_filename()
-        ];
 
         $contenttype = $content->get_content_type_instance();
-        $encodedpath = base64_encode(json_encode($params));
 
-        $node = [
-            'shorttitle' => $content->get_name(),
-            'title' => $file->get_filename(),
-            'datemodified' => $file->get_timemodified(),
-            'datecreated' => $file->get_timecreated(),
-            'author' => $file->get_author(),
-            'license' => $file->get_license(),
-            'isref' => $file->is_external_file(),
-            'size' => $file->get_filesize(),
-            'source' => $encodedpath,
-            'icon' => $contenttype->get_icon($content),
-            'thumbnail' => $contenttype->get_icon($content)
-        ];
+        // Only content files are currently supported, but should be able to create content folder nodes in the future.
+        if (!$file = $content->get_file()) {
+            if ($externalurl = $content->get_external_url()) {
+                $params = [
+                    'contextid' => $content->get_contextid(),
+                    'component' => 'contentbank',
+                    'filearea'  => 'public',
+                    'itemid'    => $content->get_id(),
+                    'filepath'  => '/',
+                    'filename'  => $content->get_name(),
+                ];
 
-        if ($file->get_status() == 666) {
-            $node['originalmissing'] = true;
+                $encodedpath = base64_encode(json_encode($params));
+
+                $node = [
+                    'shorttitle' => $content->get_name(),
+                    'title' => $content->get_name(),
+                    'datemodified' => $content->get_timemodified(),
+                    'datecreated' => $content->get_timecreated(),
+                    'author' => '',
+                    'license' => '',
+                    'isref' => '',
+                    'size' => '',
+                    'source' => $encodedpath,
+                    'icon' => 'unknown',
+                    'thumbnail' => $OUTPUT->image_url('f/unknown-64')->out(false)
+                ];
+            } else {
+                return null;
+            }
+        } else {
+            $params = [
+                'contextid' => $file->get_contextid(),
+                'component' => $file->get_component(),
+                'filearea'  => $file->get_filearea(),
+                'itemid'    => $file->get_itemid(),
+                'filepath'  => $file->get_filepath(),
+                'filename'  => $file->get_filename()
+            ];
+
+            $encodedpath = base64_encode(json_encode($params));
+
+            $filename = $file->get_filename();
+            if (strpos($filename, '.') !== false) {
+                $tmp = explode('.', $filename);
+                $extension = array_pop($tmp);
+                $filename = $content->get_name() . '.' . $extension;
+            }
+            $node = [
+                'shorttitle' => $content->get_name(),
+                'title' => $filename,
+                'datemodified' => $file->get_timemodified(),
+                'datecreated' => $file->get_timecreated(),
+                'author' => $file->get_author(),
+                'license' => $file->get_license(),
+                'isref' => $file->is_external_file(),
+                'size' => $file->get_filesize(),
+                'source' => $encodedpath,
+                'icon' => $contenttype->get_icon($content),
+                'thumbnail' => $contenttype->get_icon($content)
+            ];
+
+            if ($file->get_status() == 666) {
+                $node['originalmissing'] = true;
+            }
         }
 
         return $node;
@@ -130,6 +184,21 @@ class helper {
         return [
             'path' => base64_encode(json_encode(['contextid' => $context->id])),
             'name' => $context->get_context_name(false)
+        ];
+    }
+
+    /**
+     * Generate a navigation folder node.
+     *
+     * @param \context $context The context
+     * @param string $name The name of the folder
+     * @param int $folderid The id of the folder
+     * @return array The navigation node
+     */
+    public static function create_navigation_folder_node(\context $context, string $name, int $folderid): array {
+        return [
+            'path' => base64_encode(json_encode(['contextid' => $context->id, 'folderid' => $folderid])),
+            'name' => $name
         ];
     }
 }

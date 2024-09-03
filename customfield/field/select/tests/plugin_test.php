@@ -63,8 +63,8 @@ final class plugin_test extends \advanced_testcase {
         $this->courses[2] = $this->getDataGenerator()->create_course();
         $this->courses[3] = $this->getDataGenerator()->create_course();
 
-        $this->cfdata[1] = $this->get_generator()->add_instance_data($this->cfields[1], $this->courses[1]->id, 1);
-        $this->cfdata[2] = $this->get_generator()->add_instance_data($this->cfields[1], $this->courses[2]->id, 1);
+        $this->cfdata[1] = $this->get_generator()->add_instance_data($this->cfields[1], $this->courses[1]->id, 'a');
+        $this->cfdata[2] = $this->get_generator()->add_instance_data($this->cfields[1], $this->courses[2]->id, 'a');
 
         $this->setUser($this->getDataGenerator()->create_user());
     }
@@ -129,7 +129,7 @@ final class plugin_test extends \advanced_testcase {
         $this->assertFalse($form->is_validated());
 
         // Now with required field.
-        $submitdata['customfield_myfield2'] = 1;
+        $submitdata['customfield_myfield2'] = 'a';
         core_customfield_test_instance_form::mock_submit($submitdata, []);
         $form = new core_customfield_test_instance_form('POST',
             ['handler' => $handler, 'instance' => $this->courses[1]]);
@@ -189,10 +189,10 @@ final class plugin_test extends \advanced_testcase {
      */
     public static function parse_value_provider(): array {
         return [
-            ['Red', 1],
-            ['Blue', 2],
-            ['Green', 3],
-            ['Mauve', 0],
+            ['Red', 'Red'],
+            ['Blue', 'Blue'],
+            ['Green', 'Green'],
+            ['Mauve', 'Mauve'],
         ];
     }
 

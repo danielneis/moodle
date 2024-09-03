@@ -118,6 +118,15 @@ abstract class content {
     }
 
     /**
+     * Returns $this->content->timecreated.
+     *
+     * @return int  $this->content->timecreated.
+     */
+    public function get_timecreated(): int {
+        return $this->content->timecreated;
+    }
+
+    /**
      * Updates content_bank table with information in $this->content.
      *
      * @return boolean  True if the content has been succesfully updated. False otherwise.
@@ -213,6 +222,15 @@ abstract class content {
     }
 
     /**
+     * Returns the folderid of the content.
+     *
+     * @return int   The id of the content context.
+     */
+    public function get_folderid(): string {
+        return $this->content->folderid;
+    }
+
+    /**
      * Returns the content ID.
      *
      * @return int   The content ID.
@@ -283,6 +301,15 @@ abstract class content {
      */
     public function get_visibility(): int {
         return $this->content->visibility;
+    }
+
+    /**
+     * Return true if the content is deleted.
+     *
+     * @return boolean
+     */
+    public function is_deleted(): int {
+        return $this->content->deleted;
     }
 
     /**
@@ -369,6 +396,9 @@ abstract class content {
      */
     public function get_file_url(): string {
         if (!$file = $this->get_file()) {
+            if ($externalurl = $this->get_external_url()) {
+                return $externalurl;
+            }
             return '';
         }
         $fileurl = moodle_url::make_pluginfile_url(

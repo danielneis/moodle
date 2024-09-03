@@ -28072,6 +28072,10 @@ table.calendartable caption {
   width: 100%;
 }
 
+#page-contentbank .modal-dialog {
+  min-height: 40em;
+}
+
 /* course.less */
 /* COURSE CONTENT */
 .block_tree .tree_item.branch {

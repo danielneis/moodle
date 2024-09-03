@@ -63,28 +63,31 @@ class viewcontent implements renderable, templatable {
     protected function get_edit_actions_dropdown(): ?array {
         global $PAGE;
         $options = [];
-        if ($this->contenttype->can_manage($this->content)) {
+        $context = \context::instance_by_id($this->content->get_contextid());
+        if ($this->contenttype->can_manage($this->content) && !$this->content->is_deleted()) {
             // Add the visibility item to the menu.
-            switch($this->content->get_visibility()) {
-                case content::VISIBILITY_UNLISTED:
-                    $visibilitylabel = get_string('visibilitysetpublic', 'core_contentbank');
-                    $newvisibility = content::VISIBILITY_PUBLIC;
-                    break;
-                case content::VISIBILITY_PUBLIC:
-                    $visibilitylabel = get_string('visibilitysetunlisted', 'core_contentbank');
-                    $newvisibility = content::VISIBILITY_UNLISTED;
-                    break;
-                default:
-                    $url = new \moodle_url('/contentbank/index.php', ['contextid' => $this->content->get_contextid()]);
-                    throw new moodle_exception('contentvisibilitynotfound', 'error', $url, $this->content->get_visibility());
-            }
+            if (has_capability('moodle/contentbank:viewunlistedcontent', $context)) {
+                switch($this->content->get_visibility()) {
+                    case content::VISIBILITY_UNLISTED:
+                        $visibilitylabel = get_string('visibilitysetpublic', 'core_contentbank');
+                        $newvisibility = content::VISIBILITY_PUBLIC;
+                        break;
+                    case content::VISIBILITY_PUBLIC:
+                        $visibilitylabel = get_string('visibilitysetunlisted', 'core_contentbank');
+                        $newvisibility = content::VISIBILITY_UNLISTED;
+                        break;
+                    default:
+                        $url = new \moodle_url('/contentbank/index.php', ['contextid' => $this->content->get_contextid()]);
+                        throw new moodle_exception('contentvisibilitynotfound', 'error', $url, $this->content->get_visibility());
+                }
 
-            if ($visibilitylabel) {
-                $options[$visibilitylabel] = [
-                    'data-action' => 'setcontentvisibility',
-                    'data-visibility' => $newvisibility,
-                    'data-contentid' => $this->content->get_id(),
-                ];
+                if ($visibilitylabel) {
+                    $options[$visibilitylabel] = [
+                        'data-action' => 'setcontentvisibility',
+                        'data-visibility' => $newvisibility,
+                        'data-contentid' => $this->content->get_id(),
+                    ];
+                }
             }
 
             // Add the rename content item to the menu.
@@ -173,6 +176,10 @@ class viewcontent implements renderable, templatable {
         // Get the content type html.
         $contenthtml = $this->contenttype->get_view_content($this->content);
         $data->contenthtml = $contenthtml;
+
+        $handler = \core_contentbank\customfield\content_handler::create();
+        $customfields = $handler->get_instance_data($this->content->get_id());
+        $data->customfieldshtml = $handler->display_custom_fields_data($customfields);
 
         $handler = \core_contentbank\customfield\content_handler::create();
         $customfields = $handler->get_instance_data($this->content->get_id());

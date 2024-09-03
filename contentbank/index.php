@@ -26,7 +26,7 @@ require('../config.php');
 
 require_login();
 
-$contextid    = optional_param('contextid', \context_system::instance()->id, PARAM_INT);
+$contextid = optional_param('contextid', \context_system::instance()->id, PARAM_INT);
 $search = optional_param('search', '', PARAM_CLEAN);
 $context = context::instance_by_id($contextid, MUST_EXIST);
 
@@ -35,7 +35,14 @@ if (!$cb->is_context_allowed($context)) {
     throw new \moodle_exception('contextnotallowed', 'core_contentbank');
 }
 
-require_capability('moodle/contentbank:access', $context);
+$folderid = optional_param('folderid', 0, PARAM_INT);
+
+$breadcrumb = \core_contentbank\contentbank::make_breadcrumb($folderid, $contextid);
+
+if (!isset($breadcrumb[0]) || (!$breadcrumb[0]['name'] == 'Professores') ||
+     !user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'editingteacher']))) {
+    require_capability('moodle/contentbank:access', $context);
+}
 
 // If notifications had been sent we don't pay attention to message parameter.
 if (empty($SESSION->notifications)) {
@@ -57,6 +64,15 @@ if ($contextid == \context_system::instance()->id) {
 
 if ($context->contextlevel == CONTEXT_COURSECAT) {
     $PAGE->set_primary_active_tab('home');
+}
+
+foreach ($breadcrumb as $bc) {
+    $PAGE->navbar->add($bc['name'], $bc['link']);
+}
+
+$setdisplay = optional_param('displayunlisted', null, PARAM_INT);
+if (!is_null($setdisplay)) {
+    set_user_preference('contentbank_displayunlisted', $setdisplay);
 }
 
 $PAGE->set_title($title);
@@ -118,22 +134,34 @@ if (has_capability('moodle/contentbank:useeditor', $context)) {
     }
 }
 
+if (isset($breadcrumb[0]) && ($breadcrumb[0]['name'] === 'Professores')) {
+    $systemctx = \context_system::instance();
+    $canupload =
+        user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'p_professor']), $systemctx->id) ||
+        user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'p_materiais']), $systemctx->id) ||
+        user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'p_administrador']), $systemctx->id) ||
+        user_has_role_assignment($USER->id, $DB->get_field('role', 'id', ['shortname' => 'p_colaborador']), $systemctx->id) ||
+        has_capability('moodle/contentbank:upload', $context);
+} else {
+    $canupload = has_capability('moodle/contentbank:upload', $context);
+}
+
 // Place the Upload button in the toolbar.
-if (has_capability('moodle/contentbank:upload', $context)) {
+if ($canupload) {
     // Don' show upload button if there's no plugin to support any file extension.
     $accepted = $cb->get_supported_extensions_as_string($context);
     if (!empty($accepted)) {
-        $importurl = new moodle_url('/contentbank/index.php', ['contextid' => $contextid]);
+        $importurl = new moodle_url('/contentbank/index.php', ['contextid' => $contextid, 'folder' => $folderid]);
         $toolbar[] = [
             'name' => get_string('upload', 'contentbank'),
             'link' => $importurl->out(false),
             'icon' => 'i/upload',
-            'action' => 'upload'
+            'action' => 'upload',
         ];
         $PAGE->requires->js_call_amd(
             'core_contentbank/upload',
             'initModal',
-            ['[data-action=upload]', \core_contentbank\form\upload_files::class, $contextid]
+            ['[data-action=upload]', \core_contentbank\form\upload_files::class, $contextid, 0, $folderid]
         );
     }
 }

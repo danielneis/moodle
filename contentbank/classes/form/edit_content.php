@@ -87,6 +87,18 @@ abstract class edit_content extends moodleform {
         $this->set_data($content);
     }
 
+    public function definition() {
+        global $DB;
+        // Add custom fields to the form.
+        $content = $DB->get_record('contentbank_content', ['id' => $this->id]);
+        $handler = \core_contentbank\customfield\content_handler::create();
+        $handler->instance_form_definition($this->_form, $this->id);
+        if ($content) {
+            $handler->instance_form_before_set_data($content);
+        }
+        $this->set_data($content);
+    }
+
     /**
      * Overrides formslib's add_action_buttons() method.
      *

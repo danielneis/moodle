@@ -61,6 +61,7 @@ function($, Ajax, Notification, Str, Templates, Url, ModalSaveCancel, ModalEvent
             var contentuses = $(this).data('uses');
             var contentid = $(this).data('contentid');
             var contextid = $(this).data('contextid');
+            var folderid = $(this).data('folderid');
 
             var strings = [
                 {
@@ -106,7 +107,7 @@ function($, Ajax, Notification, Str, Templates, Url, ModalSaveCancel, ModalEvent
             }).then(function(modal) {
                 modal.getRoot().on(ModalEvents.save, function() {
                     // The action is now confirmed, sending an action for it.
-                    return deleteContent(contentid, contextid);
+                    return deleteContent(contentid, contextid, folderid);
                 });
 
                 return;
@@ -218,6 +219,70 @@ function($, Ajax, Notification, Str, Templates, Url, ModalSaveCancel, ModalEvent
             }).catch(Notification.exception);
         });
 
+        $(ACTIONS.COPY_CONTENT).click(function(e) {
+            e.preventDefault();
+
+            var contentname = $(this).data('contentname');
+            var contentid = $(this).data('contentid');
+
+            var strings = [
+                {
+                    key: 'copycontent',
+                    component: 'core_contentbank'
+                },
+                {
+                    key: 'copy',
+                    component: 'moodle'
+                },
+            ];
+
+            var saveButtonText = '';
+            Str.get_strings(strings).then(function(langStrings) {
+                var modalTitle = langStrings[0];
+                saveButtonText = langStrings[1];
+
+                return ModalFactory.create({
+                    title: modalTitle,
+                    body: Templates.render('core_contentbank/copycontent', {'contentid': contentid, 'name': contentname}),
+                    type: ModalFactory.types.SAVE_CANCEL
+                });
+            }).then(function(modal) {
+                modal.setSaveButtonText(saveButtonText);
+                modal.getRoot().on(ModalEvents.save, function(e) {
+                    // The action is now confirmed, sending an action for it.
+                    var newname = $("#newname").val().trim();
+                    if (newname) {
+                        copyContent(contentid, newname);
+                    } else {
+                        var errorStrings = [
+                            {
+                                key: 'error',
+                            },
+                            {
+                                key: 'emptynamenotallowed',
+                                component: 'core_contentbank',
+                            },
+                        ];
+                        Str.get_strings(errorStrings).then(function(langStrings) {
+                            Notification.alert(langStrings[0], langStrings[1]);
+                        }).catch(Notification.exception);
+                        e.preventDefault();
+                    }
+                });
+
+                // Handle hidden event.
+                modal.getRoot().on(ModalEvents.hidden, function() {
+                    // Destroy when hidden.
+                    modal.destroy();
+                });
+
+                // Show the modal.
+                modal.show();
+
+                return;
+            }).catch(Notification.exception);
+        });
+
         $(ACTIONS.SET_CONTENT_VISIBILITY).click(function(e) {
             e.preventDefault();
 
@@ -226,6 +291,128 @@ function($, Ajax, Notification, Str, Templates, Url, ModalSaveCancel, ModalEvent
 
             setContentVisibility(contentid, visibility);
         });
+
+        $(ACTIONS.DELETE_CONTENT_FOREVER).click(function(e) {
+            e.preventDefault();
+
+            var contentname = $(this).data('contentname');
+            var contentuses = $(this).data('uses');
+            var contentid = $(this).data('contentid');
+            var contextid = $(this).data('contextid');
+
+            var strings = [
+                {
+                    key: 'deletecontentforever',
+                    component: 'core_contentbank'
+                },
+                {
+                    key: 'deletecontentforeverconfirm',
+                    component: 'core_contentbank',
+                    param: {
+                        name: contentname,
+                    }
+                },
+                {
+                    key: 'deletecontentconfirmlinked',
+                    component: 'core_contentbank',
+                },
+                {
+                    key: 'delete',
+                    component: 'core'
+                },
+            ];
+
+            var deleteButtonText = '';
+            Str.get_strings(strings).then(function(langStrings) {
+                var modalTitle = langStrings[0];
+                var modalContent = langStrings[1];
+                if (contentuses > 0) {
+                    modalContent += ' ' + langStrings[2];
+                }
+                deleteButtonText = langStrings[3];
+
+                return ModalFactory.create({
+                    title: modalTitle,
+                    body: modalContent,
+                    type: ModalFactory.types.SAVE_CANCEL,
+                    large: true
+                });
+            }).done(function(modal) {
+                modal.setSaveButtonText(deleteButtonText);
+                modal.getRoot().on(ModalEvents.save, function() {
+                    // The action is now confirmed, sending an action for it.
+                    return deleteContentForever(contentid, contextid);
+                });
+
+                // Handle hidden event.
+                modal.getRoot().on(ModalEvents.hidden, function() {
+                    // Destroy when hidden.
+                    modal.destroy();
+                });
+
+                // Show the modal.
+                modal.show();
+
+                return;
+            }).catch(Notification.exception);
+        });
+
+        $(ACTIONS.RESTORE_CONTENT).click(function(e) {
+            e.preventDefault();
+
+            var contentname = $(this).data('contentname');
+            var contentid = $(this).data('contentid');
+            var contextid = $(this).data('contextid');
+
+            var strings = [
+                {
+                    key: 'restorecontent',
+                    component: 'core_contentbank'
+                },
+                {
+                    key: 'restorecontentconfirm',
+                    component: 'core_contentbank',
+                    param: {
+                        name: contentname,
+                    }
+                },
+                {
+                    key: 'restore',
+                    component: 'core'
+                },
+            ];
+
+            var restoreButtonText = '';
+            Str.get_strings(strings).then(function(langStrings) {
+                var modalTitle = langStrings[0];
+                var modalContent = langStrings[1];
+                restoreButtonText = langStrings[2];
+
+                return ModalFactory.create({
+                    title: modalTitle,
+                    body: modalContent,
+                    type: ModalFactory.types.SAVE_CANCEL,
+                    large: true
+                });
+            }).done(function(modal) {
+                modal.setSaveButtonText(restoreButtonText);
+                modal.getRoot().on(ModalEvents.save, function() {
+                    // The action is now confirmed, sending an action for it.
+                    return restoreContent(contentid, contextid);
+                });
+
+                // Handle hidden event.
+                modal.getRoot().on(ModalEvents.hidden, function() {
+                    // Destroy when hidden.
+                    modal.destroy();
+                });
+
+                // Show the modal.
+                modal.show();
+
+                return;
+            }).catch(Notification.exception);
+        });
     };
 
     /**
@@ -233,8 +420,9 @@ function($, Ajax, Notification, Str, Templates, Url, ModalSaveCancel, ModalEvent
      *
      * @param {int} contentid The content to delete.
      * @param {int} contextid The contextid where the content belongs.
+     * @param {int} folderid The folderid where the content belongs.
      */
-    function deleteContent(contentid, contextid) {
+    function deleteContent(contentid, contextid, folderid) {
         var request = {
             methodname: 'core_contentbank_delete_content',
             args: {
@@ -252,7 +440,8 @@ function($, Ajax, Notification, Str, Templates, Url, ModalSaveCancel, ModalEvent
 
         }).done(function(message) {
             var params = {
-                contextid: contextid
+                contextid: contextid,
+                folderid: folderid
             };
             if (requestType == 'success') {
                 params.statusmsg = message;
@@ -343,6 +532,40 @@ function($, Ajax, Notification, Str, Templates, Url, ModalSaveCancel, ModalEvent
     }
 
     /**
+     * Copy content in the content bank.
+     *
+     * @param {int} contentid The content to rename.
+     * @param {string} name The new name for the content.
+     */
+    function copyContent(contentid, name) {
+        var request = {
+            methodname: 'core_contentbank_copy_content',
+            args: {
+                contentid: contentid,
+                name: name
+            }
+        };
+        Ajax.call([request])[0].then(function(data) {
+            if (data.id == 0) {
+                // Fetch error notifications.
+                Notification.addNotification({
+                    message: data.warnings[0].message,
+                    type: 'error'
+                });
+                Notification.fetchNotifications();
+                return data.warnings[0].message;
+            } else {
+                let params = {
+                    id: data.id,
+                    statusmsg: 'contentcopied'
+                };
+                // Redirect to the content view page and display the message as a notification.
+                window.location.href = Url.relativeUrl('contentbank/view.php', params, false);
+            }
+        }).catch(Notification.exception);
+    }
+
+    /**
      * Set content visibility in the content bank.
      *
      * @param {int} contentid The content to modify
@@ -384,6 +607,78 @@ function($, Ajax, Notification, Str, Templates, Url, ModalSaveCancel, ModalEvent
             return;
         }).catch(Notification.exception);
     }
+
+    /**
+     * Delete content forever from the content bank.
+     *
+     * @param {int} contentid The content to delete.
+     * @param {int} contextid The contextid where the content belongs.
+     */
+    function deleteContentForever(contentid, contextid) {
+        var request = {
+            methodname: 'core_contentbank_delete_content_forever',
+            args: {
+                contentids: {contentid}
+            }
+        };
+
+        var requestType = 'success';
+        Ajax.call([request])[0].then(function(data) {
+            if (data.result) {
+                return 'contentdeleted';
+            }
+            requestType = 'error';
+            return 'contentnotdeleted';
+
+        }).done(function(message) {
+            var params = {
+                contextid: contextid
+            };
+            if (requestType == 'success') {
+                params.statusmsg = message;
+            } else {
+                params.errormsg = message;
+            }
+            // Redirect to the main content bank page and display the message as a notification.
+            window.location.href = Url.relativeUrl('contentbank/trash.php', params, false);
+        }).fail(Notification.exception);
+    }
+
+    /**
+     * Restore content from the content bank's trash.
+     *
+     * @param {int} contentid The content to restore.
+     */
+    function restoreContent(contentid) {
+        var request = {
+            methodname: 'core_contentbank_restore_content',
+            args: {
+                contentids: {contentid}
+            }
+        };
+
+        var requestType = 'success';
+        Ajax.call([request])[0].then(function(data) {
+            if (data.result) {
+                return 'contentrestored';
+            }
+            requestType = 'error';
+            return 'contentnotrestored';
+
+        }).done(function(message) {
+            var params = {
+                id: contentid
+            };
+            if (requestType == 'success') {
+                params.statusmsg = message;
+            } else {
+                params.errormsg = message;
+            }
+            // Redirect to the main content bank page and display the message as a notification.
+            window.location.href = Url.relativeUrl('contentbank/view.php', params, false);
+        }).fail(Notification.exception);
+    }
+
 
     return /** @alias module:core_contentbank/actions */ {
         // Public variables and functions.

@@ -1433,7 +1433,7 @@ class course_test extends \advanced_testcase {
 
         // Try again with a default value.
         $defaults = [
-            'customfield_myselect' => 2, // Our second option: Dog.
+            'customfield_myselect' => 'Dog', // Our second option: Dog.
         ];
 
         $uploader = new tool_uploadcourse_course($mode, $updatemode, $dataupload, $defaults);

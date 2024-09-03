@@ -37,9 +37,11 @@ class contentbank_browser_context_system extends contentbank_browser {
      * Constructor.
      *
      * @param \context_system $context The current context
+     * @param int $folderid The current folder
      */
-    public function __construct(\context_system $context) {
+    public function __construct(\context_system $context, int $folderid) {
         $this->context = $context;
+        $this->folderid = $folderid;
     }
 
     /**

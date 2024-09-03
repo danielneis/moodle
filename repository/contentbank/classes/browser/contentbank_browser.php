@@ -36,13 +36,16 @@ abstract class contentbank_browser {
     /** @var \context The current context. */
     protected $context;
 
+    /** @var int The current folderid. */
+    protected $folderid;
+
     /**
      * Get all content nodes in the current context which can be viewed/accessed by the user.
      *
      * @return array[] The array containing all nodes which can be viewed/accessed by the user in the current context
      */
     public function get_content(): array {
-        return array_merge($this->get_context_folders(), $this->get_contentbank_content());
+        return array_merge($this->get_context_folders(), $this->get_contentbank_folder(), $this->get_contentbank_content());
     }
 
     /**
@@ -52,6 +55,7 @@ abstract class contentbank_browser {
      *                 Each navigation node is an array with keys: name, path.
      */
     public function get_navigation(): array {
+        global $DB;
         // Get the current navigation node.
         $currentnavigationnode = \repository_contentbank\helper::create_navigation_node($this->context);
         $navigationnodes = [$currentnavigationnode];
@@ -62,6 +66,19 @@ abstract class contentbank_browser {
             $parentnavigationnode = \repository_contentbank\helper::create_navigation_node($parent->context);
             array_unshift($navigationnodes, $parentnavigationnode);
             $parent = $parent->get_parent();
+        }
+        if ($this->folderid) {
+            $params = ['contextid' => $this->context->id, 'id' => $this->folderid];
+            $folder = $DB->get_record('contentbank_folders', $params, 'id, name, path');
+            $levels = explode('/', $folder->path);
+            foreach ($levels as $level) {
+                if ($level == '') {
+                    continue;
+                }
+                if ($name = $DB->get_field('contentbank_folders', 'name', ['id' => $level])) {
+                    $navigationnodes[] = \repository_contentbank\helper::create_navigation_folder_node($this->context, $name, $level);
+                }
+            }
         }
         return $navigationnodes;
     }
@@ -117,7 +134,7 @@ abstract class contentbank_browser {
      */
     private function get_parent(): ?self {
         if ($parentcontext = $this->context->get_parent_context()) {
-            return \repository_contentbank\helper::get_contentbank_browser($parentcontext);
+            return \repository_contentbank\helper::get_contentbank_browser($parentcontext, $this->folderid);
         }
         return null;
     }
@@ -129,12 +146,16 @@ abstract class contentbank_browser {
      *                 title, datemodified, datecreated, path, thumbnail, children.
      */
     private function get_context_folders(): array {
+        // Do not display context folders when inside a "real" folder.
+        if ($this->folderid) {
+            return [];
+        }
         // Get all relevant child contexts.
         $children = $this->get_child_contexts();
         // Return all child context folder nodes which can be accessed by the user following the defined conditions
         // in can_access_content().
         return array_reduce($children, function ($list, $child) {
-            $browser = \repository_contentbank\helper::get_contentbank_browser($child);
+            $browser = \repository_contentbank\helper::get_contentbank_browser($child, $this->folderid);
             if ($browser->can_access_content()) {
                 $name = $child->get_context_name(false);
                 $path = base64_encode(json_encode(['contextid' => $child->id]));
@@ -148,18 +169,52 @@ abstract class contentbank_browser {
      * Generate nodes for the content bank content in the current context which can be accessed/viewed by the user.
      *
      * @return array[] The array containing the content nodes where each content node is an array with keys:
-     *                 shorttitle, title, datemodified, datecreated, author, license, isref, source, icon, thumbnail.
+     *                 customfield_code, shorttitle, title, datemodified, datecreated, author, license, isref, source, icon, thumbnail.
      */
     private function get_contentbank_content(): array {
+        global $DB;
         $cb = new \core_contentbank\contentbank();
         // Get all content bank files in the current context.
-        $contents = $cb->search_contents(null, $this->context->id);
+        $contents = $cb->search_contents(null, $this->context->id, null, $this->folderid);
         // Return all content bank content nodes from the current context which can be accessed by the user following
         // the defined conditions in can_access_content().
         return array_reduce($contents, function($list, $content) {
-            if ($this->can_access_content() &&
+            if ((!is_callable([$content, 'is_temporary']) || !$content->is_temporary()) && $this->can_access_content() &&
                     $contentnode = \repository_contentbank\helper::create_contentbank_content_node($content)) {
+
+                global $DB;
+
+                $categoryid = $DB->get_field('customfield_category', 'id', ['component' => 'core_contentbank'], IGNORE_MULTIPLE);
+                $fieldid = $DB->get_field('customfield_field', 'id', ['shortname' => 'code', 'categoryid' => $categoryid]);
+
+                if ($code = $DB->get_field('customfield_data', 'charvalue', ['fieldid' => $fieldid, 'instanceid' => $content->get_id()])) {
+                    $contentnode['customfield_code'] = $code;
+                } else {
+                    $contentnode['customfield_code'] = '';
+                }
+
                 $list[] = $contentnode;
+            }
+            return $list;
+        }, []);
+    }
+
+    /**
+     * Generate nodes for the content bank content in the current context which can be accessed/viewed by the user.
+     *
+     * @return array[] The array containing the content nodes where each content node is an array with keys:
+     *                 shorttitle, title, datemodified, datecreated, author, license, isref, source, icon, thumbnail.
+     */
+    private function get_contentbank_folder(): array {
+        $cb = new \core_contentbank\contentbank();
+        // Get all content bank files in the current context.
+        // Get all folders in this path.
+        $folders = \core_contentbank\contentbank::get_folders_in_folder($this->folderid, $this->context->id);
+        // Return all content bank content nodes from the current context which can be accessed by the user following
+        // the defined conditions in can_access_content().
+        return array_reduce($folders, function($list, $folder) {
+            if ($foldernode = \repository_contentbank\helper::create_contentbank_folder_node($folder)) {
+                $list[] = $foldernode;
             }
             return $list;
         }, []);

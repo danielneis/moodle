@@ -138,4 +138,8 @@ abstract class base {
 
         return $value;
     }
+
+    public static function uses_groupby() {
+        return false;
+    }
 }

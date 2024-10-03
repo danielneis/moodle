@@ -533,6 +533,10 @@ final class column {
         return $this->disabledaggregation;
     }
 
+    public function uses_groupby() {
+        return (empty($this->get_aggregation()) || (new ($this->get_aggregation()))->uses_groupby());
+    }
+
     /**
      * Sets the column as sortable
      *

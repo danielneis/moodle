@@ -108,7 +108,7 @@ class custom_report_table extends base_report_table {
             $columnheaders[$column->get_column_alias()] = $columnheading !== '' ? $columnheading : $column->get_title();
 
             // We need to determine for each column whether we should group by its fields, to support aggregation.
-            if ($showuniquerows || ($hasaggregatedcolumns && empty($column->get_aggregation()))) {
+            if ($showuniquerows || ($hasaggregatedcolumns && $column->uses_groupby())) {
                 $groupby = array_merge($groupby, $column->get_groupby_sql());
             }
 

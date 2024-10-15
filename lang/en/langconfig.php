@@ -192,6 +192,7 @@ $string['strftimerecentfull'] = '%a, %d %b %Y, %I:%M %p';
 $string['strftimetime'] = '%I:%M %p';
 $string['strftimetime12'] = '%I:%M %p';
 $string['strftimetime24'] = '%H:%M';
+$string['strftimeyear'] = '%Y';
 $string['thisdirection'] = 'ltr';
 $string['thisdirectionvertical'] = 'btt';
 $string['thislanguage'] = 'English';

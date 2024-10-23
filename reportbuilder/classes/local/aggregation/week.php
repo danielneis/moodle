@@ -24,13 +24,12 @@ use core_reportbuilder\local\helpers\format;
 use core_reportbuilder\local\report\column;
 
 /**
- * Column date aggregation type
+ * Column week aggregation type
  *
  * @package     core_reportbuilder
- * @copyright   2024 Paul Holden <paulh@moodle.com>
  * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class date extends base {
+class week extends base {
 
     /**
      * Return aggregation name
@@ -38,7 +37,7 @@ class date extends base {
      * @return lang_string
      */
     public static function get_name(): lang_string {
-        return new lang_string('aggregationdate', 'core_reportbuilder');
+        return new lang_string('aggregationweek', 'core_reportbuilder');
     }
 
     /**
@@ -64,7 +63,13 @@ class date extends base {
         // Apply timezone offset for current user.
         $datenow = di::get(clock::class)->now();
 
-        return "unix_timestamp(from_unixtime({$field} + " . $datenow->getOffset() . ", '%Y-%m-%d'))";
+        // Week starting on sunday. It's possible to change the day by replacing -1 with -2 for monday, and so on. 
+        return "unix_timestamp(
+                  FROM_DAYS(
+                    TO_DAYS(from_unixtime({$field} + " . $datenow->getOffset() . "))
+                    -MOD(TO_DAYS(from_unixtime({$field} + " . $datenow->getOffset() . ")) -1, 7)
+                  )
+                )";
     }
 
     /**
@@ -86,6 +91,8 @@ class date extends base {
      * @return string
      */
     public static function format_value($value, array $values, array $callbacks, int $columntype): string {
-        return format::userdate($value, (object) [], get_string('strftimedaydate', 'core_langconfig'));
+        return format::userdate($value, (object) [], get_string('strftimedate', 'core_langconfig')) .
+               ' - ' .
+               format::userdate($value  + 518400, (object) [], get_string('strftimedate', 'core_langconfig'));
     }
 }

@@ -24,13 +24,12 @@ use core_reportbuilder\local\helpers\format;
 use core_reportbuilder\local\report\column;
 
 /**
- * Column date aggregation type
+ * Column hour aggregation type
  *
  * @package     core_reportbuilder
- * @copyright   2024 Paul Holden <paulh@moodle.com>
  * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class date extends base {
+class hour extends base {
 
     /**
      * Return aggregation name
@@ -38,7 +37,7 @@ class date extends base {
      * @return lang_string
      */
     public static function get_name(): lang_string {
-        return new lang_string('aggregationdate', 'core_reportbuilder');
+        return new lang_string('aggregationhour', 'core_reportbuilder');
     }
 
     /**
@@ -64,7 +63,7 @@ class date extends base {
         // Apply timezone offset for current user.
         $datenow = di::get(clock::class)->now();
 
-        return "unix_timestamp(from_unixtime({$field} + " . $datenow->getOffset() . ", '%Y-%m-%d'))";
+        return "unix_timestamp(from_unixtime({$field} + " . $datenow->getOffset() . ",'%Y-%m-%d %H'))";
     }
 
     /**
@@ -85,7 +84,8 @@ class date extends base {
      * @param int $columntype
      * @return string
      */
-    public static function format_value($value, array $values, array $callbacks, int $columntype): string {
-        return format::userdate($value, (object) [], get_string('strftimedaydate', 'core_langconfig'));
-    }
+    //public static function format_value($value, array $values, array $callbacks, int $columntype): string {
+    //    var_dump($values);die();
+    //    return format::userdate($value, (object) [], get_string('strftimedatemonthtimeshort', 'core_langconfig'));
+    //}
 }

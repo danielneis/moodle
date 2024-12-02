@@ -243,35 +243,40 @@ class contentbank {
             $sql .= ' AND (' . $DB->sql_like('c.name', ':name', false, false);
             $params['name'] = '%' . $DB->sql_like_escape($search) . '%';
 
+            /*
             $fields = \core_contentbank\customfield\content_handler::create()->get_fields();
             if (!$fields) {
                 $fields = array();
             }
             list($fieldsql1, $fieldparam1) = $DB->get_in_or_equal(array_keys($fields), SQL_PARAMS_NAMED, 'fld1', true, 0);
+            */
+            $fieldid = $DB->get_field('customfield_field', 'id', ['shortname' => 'code', 'categoryid' => 1]);
 
             $sql .= ' OR EXISTS (SELECT 1
                                    FROM {customfield_data} cfd
                                   WHERE cfd.contextid = c.contextid
                                     AND ' . $DB->sql_like('cfd.value', ':cfdvalue', false, false) .
-                                  ' AND cfd.fieldid ' . $fieldsql1 .
+                                  ' AND cfd.fieldid = :fieldid ' .
                                   ' AND cfd.instanceid = c.id ' .
                                 '))';
             $params['cfdvalue'] = '%' . $DB->sql_like_escape($search) . '%';
 
-            $params = array_merge($params, $fieldparam1);
+            $params['fieldid'] = $fieldid;
 
+            /*
             list($fieldsql2, $param2) = $DB->get_in_or_equal(array_keys($fields), SQL_PARAMS_NAMED, 'fld2', true, 0);
             $param2['selectfieldval'] = '%' . $search . '%';
 
-            $searchselect = "CONVERT(SUBSTRING_INDEX( 
+            $searchselect = "SUBSTRING_INDEX( 
                                              SUBSTRING_INDEX(
                                               SUBSTR(cf.configdata,
                                                      LOCATE('options', cf.configdata) + 10,
                                                      LOCATE('defaultvalue', cf.configdata) - LOCATE('options', cf.configdata) - 13),
                                               '\\\\r\\\\n', cfd.intvalue ),
-                                            '\\\\r\\\\n', -1) USING 'latin1')";
+                                            '\\\\r\\\\n', -1)";
 
-            $sql2 = "select c.*
+            $sql2 = "select c.id, c.name, c.contenttype, c.contextid, c.folderid, c.visibility,c.instanceid,
+                            c.usercreated, c.usermodified, c.timecreated, c.timemodified, c.deleted, c.externalurl, c.parent
                        from {contentbank_content} c
                       WHERE c.deleted = 0
                         AND EXISTS(
@@ -292,6 +297,7 @@ class contentbank {
                     $contents[] = $content;
                 }
             }
+            */
         }
 
         if ($deleted) {
@@ -300,7 +306,8 @@ class contentbank {
             $sql .= ' AND c.deleted = 0';
         }
 
-        $fullsql = "SELECT c.*
+        $fullsql = "SELECT c.id, c.name, c.contenttype, c.contextid, c.folderid, c.visibility,c.instanceid,
+                            c.usercreated, c.usermodified, c.timecreated, c.timemodified, c.deleted, c.externalurl, c.parent
                       FROM {contentbank_content} c
                  LEFT JOIN {contentbank_folders} f
                         ON f.id = c.folderid

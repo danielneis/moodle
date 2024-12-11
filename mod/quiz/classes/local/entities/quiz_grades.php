@@ -128,11 +128,18 @@ class quiz_grades extends base {
         $filters = [];
         $quizgradealias = $this->get_table_alias('quiz_grades');
         $filters[] = (new filter(
-            text::class,
-            'gradeselector',
-            new lang_string('grade', 'mod_quiz'),
+            number::class,
+            'grade',
+            new lang_string('gradenoun'),
             $this->get_entity_name(),
             "{$quizgradealias}.grade"
+        ));
+        $filters[] = (new filter(
+            date::class,
+            'timemodified',
+            new lang_string('timemodified', 'mod_quiz'),
+            $this->get_entity_name(),
+            "{$quizgradealias}.timemodified"
         ));
         return $filters;
     }

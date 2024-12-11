@@ -20,6 +20,7 @@ use core_reportbuilder\local\filters\{date, duration, number, text};
 use core_reportbuilder\local\report\{column, filter};
 use core_reportbuilder\local\entities\base;
 use core_reportbuilder\local\helpers\format;
+use mod_quiz\local\filters\quiz_selector;
 use lang_string;
 
 /**
@@ -155,6 +156,7 @@ class quiz extends base {
            new lang_string('gradepass', 'grades'),
            $this->get_entity_name()
         ))
+          ->set_type(column::TYPE_FLOAT)
           ->set_is_sortable(true)
           ->add_field("{$quizalias}.grade");
 
@@ -178,6 +180,16 @@ class quiz extends base {
            $this->get_entity_name(),
            "{$quizalias}.name"
         ));
+
+        // We add our own custom course selector filter.
+        $filters[] = (new filter(
+            quiz_selector::class,
+            'quizselector',
+            new lang_string('quizselect', 'mod_quiz'),
+            $this->get_entity_name(),
+            "{$quizalias}.id"
+        ))
+            ->add_joins($this->get_joins());
 
         return $filters;
     }

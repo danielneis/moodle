@@ -835,6 +835,7 @@ $string['quiz:regrade'] = 'Regrade quiz attempts';
 $string['quiz:reopenattempts'] = 'Reopen never submitted quiz attempts';
 $string['quizreport'] = 'Quiz report';
 $string['quiz:reviewmyattempts'] = 'Review your own attempts';
+$string['quizselect'] = 'Select Quiz';
 $string['quizsettings'] = 'Quiz settings';
 $string['quizsetupnavigation'] = 'Quiz setup navigation';
 $string['quiz:view'] = 'View quiz information';

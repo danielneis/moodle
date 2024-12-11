@@ -101,6 +101,7 @@ class quiz_grades extends base {
             new lang_string('gradenoun'),
             $this->get_entity_name()
         ))
+          ->set_type(column::TYPE_FLOAT)
           ->set_is_sortable(true)
           ->add_field("{$quizgradealias}.grade");
 

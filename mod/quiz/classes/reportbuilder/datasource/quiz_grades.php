@@ -80,6 +80,7 @@ class quiz_grades extends datasource {
     public function get_default_columns(): array {
         return ['course:coursefullnamewithlink',
                 'quiz:namewithlink',
+                'user:fullnamewithlink',
                 'quiz_grades:grade', ];
     }
 

@@ -63,7 +63,7 @@ class month extends base {
         // Apply timezone offset for current user.
         $datenow = di::get(clock::class)->now();
 
-        return "unix_timestamp(from_unixtime({$field} + " . $datenow->getOffset() . ", '%Y-%m-01'))";
+        return "unix_timestamp(from_unixtime({$field}, '%Y-%m-02')) + " . $datenow->getOffset();
     }
 
     /**

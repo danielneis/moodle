@@ -64,7 +64,7 @@ class date extends base {
         // Apply timezone offset for current user.
         $datenow = di::get(clock::class)->now();
 
-        return "unix_timestamp(from_unixtime({$field} + " . $datenow->getOffset() . ", '%Y-%m-%d'))";
+        return "unix_timestamp(from_unixtime({$field}, '%Y-%m-%d')) + " . $datenow->getOffset();
     }
 
     /**

@@ -63,13 +63,13 @@ class week extends base {
         // Apply timezone offset for current user.
         $datenow = di::get(clock::class)->now();
 
-        // Week starting on sunday. It's possible to change the day by replacing -1 with -2 for monday, and so on. 
+        // Week starting on sunday. It's possible to change the day by replacing -2 with -3 for monday, and so on. 
         return "unix_timestamp(
                   FROM_DAYS(
-                    TO_DAYS(from_unixtime({$field} + " . $datenow->getOffset() . "))
-                    -MOD(TO_DAYS(from_unixtime({$field} + " . $datenow->getOffset() . ")) -1, 7)
+                    TO_DAYS(from_unixtime({$field}))
+                    -MOD(TO_DAYS(from_unixtime({$field})) -2, 7)
                   )
-                )";
+                ) + " . $datenow->getOffset();
     }
 
     /**
@@ -93,6 +93,6 @@ class week extends base {
     public static function format_value($value, array $values, array $callbacks, int $columntype): string {
         return format::userdate($value, (object) [], get_string('strftimedate', 'core_langconfig')) .
                ' - ' .
-               format::userdate($value  + 518400, (object) [], get_string('strftimedate', 'core_langconfig'));
+               format::userdate($value + 518400, (object) [], get_string('strftimedate', 'core_langconfig'));
     }
 }

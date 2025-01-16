@@ -510,14 +510,23 @@ class course_enrolment_manager {
 
         [$ufields, $joins, $params, $wherecondition] = $this->get_basic_search_conditions($search, $searchanywhere);
 
+        $courseid = $DB->get_field('enrol', 'courseid', ['id' => $enrolid]);
+        $enrols = $DB->get_records('enrol', ['courseid' => $courseid], 'id', 'id');
+        $enrols = array_keys($enrols);
+        list($enrolssql, $enrolsparams) = $DB->get_in_or_equal($enrols, SQL_PARAMS_NAMED);
+
         $fields      = 'SELECT '.$ufields;
         $countfields = 'SELECT COUNT(1)';
+        // Users which are not enrolled,
+        // or the enrol has expired.
         $sql = " FROM {user} u
                       $joins
-            LEFT JOIN {user_enrolments} ue ON (ue.userid = u.id AND ue.enrolid = :enrolid)
+            LEFT JOIN {user_enrolments} ue ON (ue.userid = u.id AND ue.enrolid {$enrolssql})
                 WHERE $wherecondition
-                      AND ue.id IS NULL";
+                  AND (ue.id IS NULL OR (ue.timeend > 0 AND ue.timeend < :time))";
         $params['enrolid'] = $enrolid;
+        $params['time'] = time();
+        $params = array_merge($params, $enrolsparams);
 
         return $this->execute_search_queries($search, $fields, $countfields, $sql, $params, $page, $perpage, $addedenrollment,
                 $returnexactcount);

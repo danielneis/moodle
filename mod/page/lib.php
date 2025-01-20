@@ -387,9 +387,9 @@ function page_pluginfile($course, $cm, $context, $filearea, $args, $forcedownloa
                 if (!empty($content->externalurl)) {
                     redirect($content->externalurl);
                 }
-
-                $stored_file = $fs->get_file(
-                        $params['contextid'], 'contentbank', 'public', $params['itemid'], $params['filepath'], $params['filename']);
+                $contentclass = "\\$content->contenttype\\content";
+                $contentobj = new $contentclass($content);
+                $stored_file = $contentobj->get_file();
                 if ($stored_file && !$stored_file->is_directory()) {
 
                     $filename = $stored_file->get_filename();

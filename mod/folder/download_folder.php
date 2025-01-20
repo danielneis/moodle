@@ -68,8 +68,9 @@ foreach ($files as $file) {
     if ($file->get_reference()) {
         $params = file_storage::unpack_reference($file->get_reference(), true);
         if ($content = $DB->get_record('contentbank_content', ['id' => $params['itemid']])) {
-            $stored_file = $fs->get_file(
-                    $params['contextid'], 'contentbank', 'public', $params['itemid'], $params['filepath'], $params['filename']);
+            $contentclass = "\\$content->contenttype\\content";
+            $contentobj = new $contentclass($content);
+            $stored_file = $contentobj->get_file();
             if ($stored_file && !$stored_file->is_directory()) {
 
                 $sffilename = $stored_file->get_filename();

@@ -24,21 +24,20 @@ use core_reportbuilder\local\helpers\format;
 use core_reportbuilder\local\report\column;
 
 /**
- * Column date aggregation type
+ * Column week aggregation type
  *
  * @package     core_reportbuilder
- * @copyright   2024 Paul Holden <paulh@moodle.com>
+ * @copyright   2025 Daniel Neis Araujo
  * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class date extends base {
-
+class week extends base {
     /**
      * Return aggregation name
      *
      * @return lang_string
      */
     public static function get_name(): lang_string {
-        return new lang_string('aggregationdate', 'core_reportbuilder');
+        return new lang_string('aggregationweek', 'core_reportbuilder');
     }
 
     /**
@@ -59,10 +58,7 @@ class date extends base {
      * @return string
      */
     public static function get_field_sql(string $field, int $columntype): string {
-        $datenow = di::get(clock::class)->now();
-
-        // Apply timezone offset for current user.
-        return "(FLOOR({$field} / " . DAYSECS . ") * " . DAYSECS . ") + " . $datenow->getOffset();
+        return "(CAST(({$field} / " . WEEKSECS . ") as INT) * " . WEEKSECS . ")";
     }
 
     /**
@@ -75,16 +71,6 @@ class date extends base {
     }
 
     /**
-     * Returns aggregated column type
-     *
-     * @param int $columntype
-     * @return int
-     */
-    public static function get_column_type(int $columntype): int {
-        return column::TYPE_TIMESTAMP;
-    }
-
-    /**
      * Return formatted value for column when applying aggregation
      *
      * @param mixed $value
@@ -94,6 +80,22 @@ class date extends base {
      * @return string
      */
     public function format_value($value, array $values, array $callbacks, int $columntype): string {
-        return format::userdate((int)$value, (object) [], get_string('strftimedaydate', 'core_langconfig'));
+        $value = (int)$value;
+        $date = new \DateTime();
+        $date->setTimezone(\core_date::get_user_timezone_object());
+        $date->setTimestamp($value);
+        if ($date->format('w') == 0) { // Sunday.
+            return format::userdate(strtotime('this sunday', $value), (object) [], get_string('strftimedate', 'core_langconfig')) .
+                   ' - ' .
+                   format::userdate(strtotime('next saturday', $value), (object) [], get_string('strftimedate', 'core_langconfig'));
+        } else if ($date->format('w') == 6) { // Saturday.
+            return format::userdate(strtotime('last sunday', $value), (object) [], get_string('strftimedate', 'core_langconfig')) .
+                   ' - ' .
+                   format::userdate(strtotime('this saturday', $value), (object) [], get_string('strftimedate', 'core_langconfig'));
+        } else { // Other weekdays.
+            return format::userdate(strtotime('last sunday', $value), (object) [], get_string('strftimedate', 'core_langconfig')) .
+                   ' - ' .
+                   format::userdate(strtotime('next saturday', $value), (object) [], get_string('strftimedate', 'core_langconfig'));
+        }
     }
 }

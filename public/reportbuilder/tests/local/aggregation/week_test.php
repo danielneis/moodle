@@ -23,15 +23,15 @@ use core_reportbuilder\tests\core_reportbuilder_testcase;
 use core_user\reportbuilder\datasource\users;
 
 /**
- * Unit tests for date aggregation
+ * Unit tests for week aggregation
  *
  * @package     core_reportbuilder
- * @covers      \core_reportbuilder\local\aggregation\date
+ * @covers      \core_reportbuilder\local\aggregation\week
+ * @copyright   2025 Daniel Neis Araujo <danielneis@gmail.com>
  * @copyright   2024 Paul Holden <paulh@moodle.com>
  * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-final class date_test extends core_reportbuilder_testcase {
-
+final class week_test extends core_reportbuilder_testcase {
     /**
      * Mock the clock
      */
@@ -62,7 +62,7 @@ final class date_test extends core_reportbuilder_testcase {
         $generator->create_column([
             'reportid' => $report->get('id'),
             'uniqueidentifier' => 'user:lastaccess',
-            'aggregation' => date::get_class_name(),
+            'aggregation' => week::get_class_name(),
             'sortenabled' => 1,
             'sortdirection' => SORT_ASC,
         ]);
@@ -76,10 +76,9 @@ final class date_test extends core_reportbuilder_testcase {
 
         $content = $this->get_custom_report_content($report->get('id'));
         $this->assertEquals([
-            ['', 'Admin'],
-            ['Tuesday, 1 June 2021', 'Andy, Bob'],
-            ['Wednesday, 2 June 2021', 'Charlie'],
-            ['Saturday, 31 May 2025', 'Gustavo'],
+            ['28 December 1969 - 3 January 1970', 'Admin'],
+            ['30 May 2021 - 5 June 2021', 'Andy, Bob, Charlie'],
+            ['25 May 2025 - 31 May 2025', 'Gustavo'],
         ], array_map('array_values', $content));
     }
 }

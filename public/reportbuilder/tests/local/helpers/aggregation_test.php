@@ -71,7 +71,7 @@ final class aggregation_test extends advanced_testcase {
      */
     public function test_get_aggregations(): void {
         $aggregations = aggregation::get_aggregations();
-        $this->assertCount(10, $aggregations);
+        $this->assertCount(14, $aggregations);
 
         // Just assert single item from returned structure.
         $this->assertContains(max::class, $aggregations);
@@ -83,7 +83,7 @@ final class aggregation_test extends advanced_testcase {
      */
     public function test_get_column_aggregations(): void {
         $aggregations = aggregation::get_column_aggregations(column::TYPE_TIMESTAMP);
-        $this->assertCount(5, $aggregations);
+        $this->assertCount(9, $aggregations);
 
         // Just assert single item from returned structure.
         $this->assertArrayHasKey(max::get_class_name(), $aggregations);

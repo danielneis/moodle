@@ -61,4 +61,6 @@ foreach($authsequence as $authname) {
 
 require_logout();
 
+// ugly hack to logout from identity provider.
+$redirect = 'https://identity.astrazeneca.com/csdcidentity/logout?clientId=azacademy-br';
 redirect($redirect);

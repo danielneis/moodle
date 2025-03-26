@@ -195,7 +195,7 @@ function groups_remove_member_allowed($grouporid, $userorid) {
  * @return bool True if permitted, false otherwise
  */
 function groups_remove_members_allowed(stdClass $group): bool {
-    if (empty($gruop->component)) {
+    if (empty($group->component)) {
         return true;
     }
     return component_callback($group->component, 'allow_group_members_remove', [$group], true);

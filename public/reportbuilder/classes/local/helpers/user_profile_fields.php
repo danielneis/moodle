@@ -144,6 +144,8 @@ class user_profile_fields {
                         $row->dataformat ?? $field->field->defaultdataformat,
                     );
 
+                    $field->set_userid($row->userid);
+
                     return $field->display_data();
                 }, $profilefield)
                 ->set_is_available($profilefield->is_visible());
